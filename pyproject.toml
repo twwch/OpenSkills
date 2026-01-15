@@ -1,0 +1,65 @@
+[project]
+name = "openskills"
+dynamic = ["version"]
+description = "An open-source Agent Skill framework implementing progressive disclosure architecture"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "OpenSkills Contributors" }
+]
+keywords = ["agent", "skill", "llm", "ai", "claude", "openai", "chatgpt"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "httpx>=0.25",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/anthropics/openskills"
+Documentation = "https://github.com/anthropics/openskills#readme"
+Repository = "https://github.com/anthropics/openskills.git"
+Issues = "https://github.com/anthropics/openskills/issues"
+
+[project.scripts]
+openskills = "openskills.cli.main:app"
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "openskills/_version.py"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
