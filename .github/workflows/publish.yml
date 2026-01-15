@@ -38,12 +38,12 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/openskills
-    permissions:
-      id-token: write
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -51,7 +51,7 @@ jobs:
           path: dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        run: uv publish --token ${{ secrets.PYPI_TOKEN }}
 
   release:
     needs: publish
