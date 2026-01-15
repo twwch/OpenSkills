@@ -87,7 +87,7 @@ jobs:
             ## Installation
 
             ```bash
-            pip install openskills==${{ steps.version.outputs.version }}
+            pip install openskills-sdk==${{ steps.version.outputs.version }}
             ```
 
             ## Changes

@@ -1,10 +1,10 @@
 [project]
-name = "openskills"
+name = "openskills-sdk"
 dynamic = ["version"]
 description = "An open-source Agent Skill framework implementing progressive disclosure architecture"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [
     { name = "OpenSkills Contributors" }
 ]
@@ -12,7 +12,7 @@ keywords = ["agent", "skill", "llm", "ai", "claude", "openai", "chatgpt"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -35,10 +35,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/anthropics/openskills"
-Documentation = "https://github.com/anthropics/openskills#readme"
-Repository = "https://github.com/anthropics/openskills.git"
-Issues = "https://github.com/anthropics/openskills/issues"
+Homepage = "https://github.com/anthropics/openskills-sdk"
+Documentation = "https://github.com/anthropics/openskills-sdk#readme"
+Repository = "https://github.com/anthropics/openskills-sdk.git"
+Issues = "https://github.com/anthropics/openskills-sdk/issues"
 
 [project.scripts]
 openskills = "openskills.cli.main:app"
