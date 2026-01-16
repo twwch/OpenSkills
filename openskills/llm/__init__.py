@@ -14,7 +14,7 @@ from openskills.llm.base import (
     image_base64,
     text,
 )
-from openskills.llm.openai_compat import OpenAICompatClient, create_client
+from openskills.llm.openai_compat import OpenAICompatClient, AzureOpenAIClient, create_client
 from openskills.llm.prompt_builder import PromptBuilder
 
 __all__ = [
@@ -35,6 +35,7 @@ __all__ = [
     "text",
     # Clients
     "OpenAICompatClient",
+    "AzureOpenAIClient",
     "create_client",
     # Utilities
     "PromptBuilder",

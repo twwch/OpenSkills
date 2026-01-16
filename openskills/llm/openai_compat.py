@@ -323,6 +323,200 @@ class OpenAICompatClient(BaseLLMClient):
         await self.close()
 
 
+class AzureOpenAIClient(OpenAICompatClient):
+    """
+    Azure OpenAI API client.
+
+    Azure OpenAI has a different API format:
+    - Endpoint: https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions
+    - Auth: api-key header instead of Bearer token
+    - Requires api-version parameter
+
+    Environment variables:
+    - AZURE_OPENAI_API_KEY: API key
+    - AZURE_OPENAI_ENDPOINT: Resource endpoint (e.g., https://myresource.openai.azure.com)
+    - AZURE_OPENAI_API_VERSION: API version (default: 2024-02-15-preview)
+    """
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        endpoint: str | None = None,
+        deployment: str | None = None,
+        api_version: str | None = None,
+        default_headers: dict | None = None,
+        timeout: float = 120.0,
+        max_retries: int = 2,
+    ):
+        """
+        Initialize Azure OpenAI client.
+
+        Args:
+            api_key: Azure OpenAI API key (defaults to AZURE_OPENAI_API_KEY)
+            endpoint: Azure OpenAI endpoint (defaults to AZURE_OPENAI_ENDPOINT)
+            deployment: Deployment name (defaults to AZURE_OPENAI_DEPLOYMENT)
+            api_version: API version (defaults to AZURE_OPENAI_API_VERSION or 2024-02-15-preview)
+            default_headers: Additional headers
+            timeout: Request timeout
+            max_retries: Max retries
+        """
+        self.api_key = api_key or os.getenv("AZURE_OPENAI_API_KEY", "")
+        self.endpoint = (endpoint or os.getenv("AZURE_OPENAI_ENDPOINT", "")).rstrip("/")
+        self.deployment = deployment or os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4")
+        self.api_version = api_version or os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
+        self.default_headers = default_headers or {}
+        self.timeout = timeout
+        self.max_retries = max_retries
+
+        # For compatibility with parent class
+        self.model = self.deployment
+        self.base_url = self.endpoint
+
+        self._client = httpx.AsyncClient(
+            timeout=httpx.Timeout(timeout),
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+        )
+
+    def _get_chat_url(self) -> str:
+        """Get the Azure chat completions URL."""
+        return f"{self.endpoint}/openai/deployments/{self.deployment}/chat/completions?api-version={self.api_version}"
+
+    def _get_headers(self) -> dict:
+        """Get request headers for Azure."""
+        headers = {
+            "Content-Type": "application/json",
+            **self.default_headers,
+        }
+        if self.api_key:
+            headers["api-key"] = self.api_key
+        return headers
+
+    async def _make_request(
+        self,
+        payload: dict,
+        retries: int = 0,
+    ) -> httpx.Response:
+        """Make an API request to Azure OpenAI."""
+        # Remove model from payload - Azure uses deployment in URL
+        payload = {k: v for k, v in payload.items() if k != "model"}
+
+        try:
+            response = await self._client.post(
+                self._get_chat_url(),
+                headers=self._get_headers(),
+                json=payload,
+            )
+            response.raise_for_status()
+            return response
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code >= 500 or e.response.status_code == 429:
+                if retries < self.max_retries:
+                    import asyncio
+                    await asyncio.sleep(2 ** retries)
+                    return await self._make_request(payload, retries + 1)
+            raise
+
+        except httpx.RequestError:
+            if retries < self.max_retries:
+                import asyncio
+                await asyncio.sleep(2 ** retries)
+                return await self._make_request(payload, retries + 1)
+            raise
+
+    async def chat_stream(
+        self,
+        messages: list[Message],
+        system: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        model: str | None = None,
+        tools: list[dict] | None = None,
+        tool_choice: str | dict | None = None,
+        **kwargs,
+    ) -> AsyncIterator[StreamChunk]:
+        """Send a streaming chat completion request to Azure OpenAI."""
+        request_messages = self._prepare_messages(messages, system)
+
+        payload = {
+            "messages": request_messages,
+            "temperature": temperature,
+            "stream": True,
+            **kwargs,
+        }
+
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
+
+        if tools:
+            payload["tools"] = tools
+            if tool_choice:
+                payload["tool_choice"] = tool_choice
+
+        async with self._client.stream(
+            "POST",
+            self._get_chat_url(),
+            headers=self._get_headers(),
+            json=payload,
+        ) as response:
+            response.raise_for_status()
+
+            current_tool_calls: dict[int, dict] = {}
+
+            async for line in response.aiter_lines():
+                if not line.startswith("data: "):
+                    continue
+
+                data_str = line[6:]
+                if data_str.strip() == "[DONE]":
+                    break
+
+                try:
+                    data = json.loads(data_str)
+                    choice = data["choices"][0]
+                    delta = choice.get("delta", {})
+                    finish_reason = choice.get("finish_reason")
+
+                    content = delta.get("content", "")
+
+                    tool_calls = []
+                    if "tool_calls" in delta:
+                        for tc in delta["tool_calls"]:
+                            idx = tc.get("index", 0)
+                            if idx not in current_tool_calls:
+                                current_tool_calls[idx] = {
+                                    "id": tc.get("id", ""),
+                                    "name": "",
+                                    "arguments": "",
+                                }
+                            if "id" in tc:
+                                current_tool_calls[idx]["id"] = tc["id"]
+                            if "function" in tc:
+                                if "name" in tc["function"]:
+                                    current_tool_calls[idx]["name"] = tc["function"]["name"]
+                                if "arguments" in tc["function"]:
+                                    current_tool_calls[idx]["arguments"] += tc["function"]["arguments"]
+
+                    if finish_reason and current_tool_calls:
+                        tool_calls = [
+                            ToolCall(
+                                id=tc["id"],
+                                name=tc["name"],
+                                arguments=tc["arguments"],
+                            )
+                            for tc in current_tool_calls.values()
+                        ]
+
+                    yield StreamChunk(
+                        content=content,
+                        finish_reason=finish_reason,
+                        tool_calls=tool_calls,
+                    )
+
+                except json.JSONDecodeError:
+                    continue
+
+
 # Convenience function to create a client
 def create_client(
     provider: str = "openai",
@@ -340,11 +534,14 @@ def create_client(
         **kwargs: Additional client options
 
     Returns:
-        Configured OpenAICompatClient
+        Configured OpenAICompatClient or AzureOpenAIClient
 
     Examples:
         # OpenAI
         client = create_client("openai", model="gpt-4-turbo")
+
+        # Azure OpenAI
+        client = create_client("azure", deployment="my-gpt4-deployment")
 
         # Ollama (local)
         client = create_client("ollama", model="llama2")
@@ -352,14 +549,20 @@ def create_client(
         # Together AI
         client = create_client("together", model="mistralai/Mixtral-8x7B-Instruct-v0.1")
     """
+    # Special handling for Azure
+    if provider == "azure":
+        return AzureOpenAIClient(
+            api_key=api_key,
+            endpoint=kwargs.pop("endpoint", None),
+            deployment=kwargs.pop("deployment", model),
+            api_version=kwargs.pop("api_version", None),
+            **kwargs,
+        )
+
     provider_configs = {
         "openai": {
             "base_url": "https://api.openai.com/v1",
             "api_key_env": "OPENAI_API_KEY",
-            "default_model": "gpt-4",
-        },
-        "azure": {
-            "api_key_env": "AZURE_OPENAI_API_KEY",
             "default_model": "gpt-4",
         },
         "ollama": {

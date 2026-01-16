@@ -24,6 +24,7 @@ from openskills.models.metadata import SkillMetadata
 from openskills.models.instruction import SkillInstruction
 from openskills.models.resource import Reference, Script
 from openskills.agent import SkillAgent, create_agent, AgentResponse
+from openskills.llm.openai_compat import OpenAICompatClient, AzureOpenAIClient, create_client
 
 try:
     from openskills._version import __version__
@@ -41,4 +42,8 @@ __all__ = [
     "SkillAgent",
     "create_agent",
     "AgentResponse",
+    # LLM Clients
+    "OpenAICompatClient",
+    "AzureOpenAIClient",
+    "create_client",
 ]

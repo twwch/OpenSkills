@@ -14,9 +14,10 @@ An open-source Agent Skill framework implementing the progressive disclosure arc
   - Layer 3 (Resources): Conditionally loaded References and Scripts
 
 - **SKILL.md file format** - Simple markdown-based skill definition
-- **Reference support** - Conditionally load additional documents
-- **Script execution** - Run scripts triggered by LLM
-- **LLM integration** - OpenAI-compatible API support with streaming
+- **Smart Reference loading** - Three modes (explicit/implicit/always) with LLM-based selection
+- **Auto-discovery** - Automatically discover references from `references/` directory
+- **Script execution** - Run scripts triggered by LLM via `[INVOKE:name]`
+- **Multiple LLM providers** - OpenAI, Azure OpenAI, Ollama, Together, Groq, DeepSeek
 - **Auto skill invocation** - Automatically match and invoke skills based on user queries
 - **Multimodal support** - Handle images via URL, base64, or file path
 
@@ -96,6 +97,11 @@ references:
   - path: references/finance-handbook.md
     condition: "When content involves finance or budget"
     description: Financial guidelines
+    mode: explicit  # LLM evaluates condition
+  - path: references/frameworks/
+    mode: implicit  # LLM decides if useful (default)
+  - path: references/safety-policy.md
+    mode: always    # Always loaded
 
 scripts:
   - name: upload
@@ -132,20 +138,103 @@ You are a professional meeting assistant...
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Reference Loading Modes
+
+References support three loading modes:
+
+| Mode | Behavior |
+|------|----------|
+| `explicit` | Has condition, LLM evaluates whether condition is met |
+| `implicit` | No condition, LLM decides if useful for current query (default) |
+| `always` | Always loaded (e.g., safety guidelines, specs) |
+
+### Auto-Discovery
+
+References are **automatically discovered** from the `references/` directory. You don't need to declare every file in frontmatter:
+
+```
+my-skill/
+├── SKILL.md
+└── references/
+    ├── guide.md          # Auto-discovered (implicit mode)
+    ├── api-docs.md       # Auto-discovered (implicit mode)
+    └── frameworks/
+        └── react.md      # Auto-discovered (implicit mode)
+```
+
+You can still declare specific references in frontmatter to customize their behavior:
+
+```yaml
+references:
+  # Override mode for specific file
+  - path: references/guide.md
+    mode: always  # Now always loaded instead of implicit
+
+  # Add condition for another file
+  - path: references/api-docs.md
+    condition: "When user asks about API"
+    mode: explicit
+```
+
+Auto-discovered files that aren't declared in frontmatter default to `implicit` mode, letting the LLM decide whether to load them based on the user's query.
+
 ## Environment Variables
 
+### OpenAI
 ```bash
 export OPENAI_API_KEY=your-api-key
 export OPENAI_BASE_URL=https://api.openai.com/v1  # Optional
 export OPENAI_MODEL=gpt-4  # Optional
 ```
 
+### Azure OpenAI
+```bash
+export AZURE_OPENAI_API_KEY=your-azure-api-key
+export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+export AZURE_OPENAI_DEPLOYMENT=your-deployment-name
+export AZURE_OPENAI_API_VERSION=2024-02-15-preview  # Optional
+```
+
+### Using Azure OpenAI
+
+```python
+from openskills import AzureOpenAIClient, SkillAgent
+
+# Method 1: Using environment variables
+client = AzureOpenAIClient()
+
+# Method 2: Explicit configuration
+client = AzureOpenAIClient(
+    api_key="your-api-key",
+    endpoint="https://your-resource.openai.azure.com",
+    deployment="gpt-4",
+)
+
+# Method 3: Using create_client helper
+from openskills import create_client
+client = create_client("azure", deployment="gpt-4")
+
+# Use with SkillAgent
+agent = SkillAgent(
+    skill_paths=["./skills"],
+    llm_client=client,
+)
+```
+
 ## Examples
 
 See the [examples](./examples) directory for complete examples:
 
+- `demo.py` - Main demo showing reference auto-discovery and LLM selection
+- `prompt-optimizer/` - Prompt engineering skill with 57 frameworks (auto-discovered)
 - `meeting-summary/` - Meeting summarization skill with finance reference
 - `office-skills/` - Word and Excel processing skills
+
+Run the demo:
+```bash
+cd examples
+python demo.py
+```
 
 ## CLI Commands
 

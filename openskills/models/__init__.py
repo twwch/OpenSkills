@@ -2,6 +2,6 @@
 
 from openskills.models.metadata import SkillMetadata
 from openskills.models.instruction import SkillInstruction
-from openskills.models.resource import Reference, Script
+from openskills.models.resource import Reference, Script, ReferenceMode
 
-__all__ = ["SkillMetadata", "SkillInstruction", "Reference", "Script"]
+__all__ = ["SkillMetadata", "SkillInstruction", "Reference", "Script", "ReferenceMode"]

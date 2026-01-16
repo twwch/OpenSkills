@@ -25,6 +25,7 @@ from openskills.llm.base import (
     ImageContent,
 )
 from openskills.llm.prompt_builder import PromptBuilder
+from openskills.models.resource import ReferenceMode
 
 
 class AgentState(str, Enum):
@@ -348,44 +349,49 @@ class SkillAgent:
         loaded = []
         skill = self._context.active_skill
 
-        # Collect references with conditions that need LLM evaluation
-        refs_to_evaluate = []
+        # Step 1: Immediately load "always" mode references
+        always_refs = []
+        refs_for_llm = []
+
         for ref in skill.references:
             if ref.path in self._context.loaded_references:
                 continue
-            if not ref.condition:
-                # No condition means always load
-                refs_to_evaluate.append((ref, True))
+
+            if ref.mode == ReferenceMode.ALWAYS:
+                always_refs.append(ref)
             else:
-                refs_to_evaluate.append((ref, None))  # Need LLM evaluation
+                # Both explicit and implicit go to LLM for evaluation
+                refs_for_llm.append(ref)
 
-        # Use LLM to evaluate conditions in batch
-        refs_needing_eval = [(ref, cond) for ref, cond in refs_to_evaluate if cond is None]
-        if refs_needing_eval:
-            eval_results = await self._evaluate_reference_conditions(
-                context, [ref for ref, _ in refs_needing_eval]
-            )
-            # Update with evaluation results
-            eval_idx = 0
-            for i, (ref, should_load) in enumerate(refs_to_evaluate):
-                if should_load is None:
-                    refs_to_evaluate[i] = (ref, eval_results[eval_idx])
-                    eval_idx += 1
+        # Load "always" refs directly
+        for ref in always_refs:
+            try:
+                content = await self._manager.load_reference(skill.name, ref.path)
+                if content:
+                    ref.content = content
+                    self._context.loaded_references.append(ref.path)
+                    loaded.append(ref.path)
+                    if self.on_reference_loaded:
+                        self.on_reference_loaded(ref.path, content)
+            except Exception:
+                pass
 
-        # Load references that should be loaded
-        for ref, should_load in refs_to_evaluate:
-            if should_load:
-                try:
-                    content = await self._manager.load_reference(skill.name, ref.path)
-                    if content:
-                        ref.content = content
-                        self._context.loaded_references.append(ref.path)
-                        loaded.append(ref.path)
+        # Step 2: Let LLM decide which explicit/implicit refs to load
+        if refs_for_llm:
+            eval_results = await self._evaluate_reference_conditions(context, refs_for_llm)
 
-                        if self.on_reference_loaded:
-                            self.on_reference_loaded(ref.path, content)
-                except Exception:
-                    pass
+            for ref, should_load in zip(refs_for_llm, eval_results):
+                if should_load:
+                    try:
+                        content = await self._manager.load_reference(skill.name, ref.path)
+                        if content:
+                            ref.content = content
+                            self._context.loaded_references.append(ref.path)
+                            loaded.append(ref.path)
+                            if self.on_reference_loaded:
+                                self.on_reference_loaded(ref.path, content)
+                    except Exception:
+                        pass
 
         return loaded
 
@@ -396,22 +402,25 @@ class SkillAgent:
         if not references:
             return []
 
-        # Build evaluation prompt
-        eval_prompt = """Determine which references should be loaded based on the user's input.
-For each reference, respond with YES or NO only.
+        # Build evaluation prompt - Claude style: LLM decides what's useful
+        eval_prompt = """For each reference, decide whether it is useful for answering the user's input.
+
+Some references have an explicit condition.
+Others are general knowledge resources without conditions.
 
 User input:
 ```
 {context}
 ```
 
-References to evaluate:
+References:
 {refs_list}
 
+For each reference, respond with YES or NO only.
 Respond with one line per reference in format: "1. YES" or "1. NO"
 """
         refs_list = "\n".join(
-            f"{i+1}. Path: {ref.path}\n   Condition: {ref.condition}"
+            f"{i+1}. Path: {ref.path}\n   Condition: {ref.condition or '(none, general reference)'}"
             for i, ref in enumerate(references)
         )
 
@@ -435,13 +444,13 @@ Respond with one line per reference in format: "1. YES" or "1. NO"
                         found = True
                         break
                 if not found:
-                    # Default to True if parsing fails
-                    results.append(True)
+                    # Default to False if parsing fails (conservative)
+                    results.append(False)
 
             return results
         except Exception:
-            # On error, default to loading all
-            return [True] * len(references)
+            # On error, default to not loading (conservative)
+            return [False] * len(references)
 
     async def _handle_script_invocations(self, response: str) -> list[str]:
         """Handle script invocations in the response."""

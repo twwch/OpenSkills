@@ -11,7 +11,7 @@ from typing import Any
 from openskills.core.skill import Skill
 from openskills.models.metadata import SkillMetadata
 from openskills.models.instruction import SkillInstruction
-from openskills.models.resource import Reference, Script, SkillResources
+from openskills.models.resource import Reference, Script, SkillResources, ReferenceMode
 from openskills.utils.frontmatter import parse_frontmatter
 
 
@@ -80,7 +80,7 @@ class SkillParser:
         metadata = self._parse_metadata(frontmatter)
 
         # Parse resources definition (Layer 3 - definitions only, not content)
-        resources = self._parse_resources(frontmatter)
+        resources = self._parse_resources(frontmatter, source_path)
 
         # Create skill
         skill = Skill(
@@ -115,22 +115,43 @@ class SkillParser:
             tags=frontmatter.get("tags", []),
         )
 
-    def _parse_resources(self, frontmatter: dict[str, Any]) -> SkillResources:
-        """Parse resource definitions from frontmatter."""
+    def _parse_resources(
+        self, frontmatter: dict[str, Any], source_path: Path | None = None
+    ) -> SkillResources:
+        """Parse resource definitions from frontmatter and auto-discover from directory."""
         references = []
         scripts = []
+        declared_paths = set()  # Track paths declared in frontmatter
 
-        # Parse references
+        # Parse references from frontmatter
         for ref_data in frontmatter.get("references", []):
             if isinstance(ref_data, dict):
+                # Parse mode field
+                mode_str = ref_data.get("mode", "implicit")
+                try:
+                    mode = ReferenceMode(mode_str)
+                except ValueError:
+                    mode = ReferenceMode.IMPLICIT
+
+                path = ref_data.get("path", "")
+                declared_paths.add(path)
                 references.append(Reference(
-                    path=ref_data.get("path", ""),
+                    path=path,
                     condition=ref_data.get("condition", ""),
                     description=ref_data.get("description", ""),
+                    mode=mode,
                 ))
             elif isinstance(ref_data, str):
-                # Simple path string
+                # Simple path string - default to implicit
+                declared_paths.add(ref_data)
                 references.append(Reference(path=ref_data))
+
+        # Auto-discover references from references/ directory
+        if source_path:
+            references_dir = source_path.parent / "references"
+            if references_dir.exists() and references_dir.is_dir():
+                discovered = self._discover_references(references_dir, declared_paths)
+                references.extend(discovered)
 
         # Parse scripts
         for script_data in frontmatter.get("scripts", []):
@@ -145,6 +166,41 @@ class SkillParser:
                 ))
 
         return SkillResources(references=references, scripts=scripts)
+
+    def _discover_references(
+        self, references_dir: Path, declared_paths: set[str]
+    ) -> list[Reference]:
+        """
+        Auto-discover reference files from references/ directory.
+
+        Args:
+            references_dir: Path to the references directory
+            declared_paths: Set of paths already declared in frontmatter
+
+        Returns:
+            List of discovered Reference objects (implicit mode)
+        """
+        discovered = []
+        # Supported file extensions for references
+        supported_extensions = {".md", ".txt", ".json", ".yaml", ".yml"}
+
+        def scan_dir(dir_path: Path, base_path: Path):
+            """Recursively scan directory for reference files."""
+            for item in dir_path.iterdir():
+                if item.is_file() and item.suffix.lower() in supported_extensions:
+                    # Create relative path from skill root
+                    rel_path = f"references/{item.relative_to(base_path)}"
+                    if rel_path not in declared_paths:
+                        discovered.append(Reference(
+                            path=rel_path,
+                            description=f"Auto-discovered: {item.name}",
+                            mode=ReferenceMode.IMPLICIT,
+                        ))
+                elif item.is_dir():
+                    scan_dir(item, base_path)
+
+        scan_dir(references_dir, references_dir)
+        return discovered
 
     def parse_metadata_only(self, path: Path) -> SkillMetadata:
         """

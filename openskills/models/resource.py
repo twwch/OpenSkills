@@ -33,6 +33,13 @@ class ResourceType(str, Enum):
     SCRIPT = "script"
 
 
+class ReferenceMode(str, Enum):
+    """Reference loading mode."""
+    EXPLICIT = "explicit"  # Has condition, LLM evaluates condition
+    IMPLICIT = "implicit"  # No condition, LLM decides if useful (Claude style)
+    ALWAYS = "always"      # Always load (e.g., safety guidelines, specs)
+
+
 class Reference(BaseModel):
     """
     Reference: Conditionally loaded document.
@@ -62,6 +69,11 @@ class Reference(BaseModel):
         description="Brief description of what this reference contains",
     )
 
+    mode: ReferenceMode = Field(
+        default=ReferenceMode.IMPLICIT,
+        description="Loading mode: explicit (condition-based), implicit (LLM decides), always (always load)",
+    )
+
     content: str | None = Field(
         default=None,
         description="Loaded content (None until loaded)",
@@ -86,12 +98,13 @@ class Reference(BaseModel):
         Returns:
             True if the reference should be loaded
         """
-        if not self.condition:
-            return True  # No condition means always load
+        # Always mode: always load
+        if self.mode == ReferenceMode.ALWAYS:
+            return True
 
-        # Simple fallback: always return True and let the LLM decide
-        # This ensures references are available when needed
-        return True
+        # For explicit and implicit modes, let the LLM decide
+        # This fallback returns False to defer to LLM evaluation
+        return False
 
 
 class Script(BaseModel):
