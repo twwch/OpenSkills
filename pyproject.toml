@@ -53,6 +53,12 @@ source = "vcs"
 [tool.hatch.build.hooks.vcs]
 version-file = "openskills/_version.py"
 
+[tool.hatch.build.targets.wheel]
+packages = ["openskills"]
+
+[tool.hatch.build.targets.sdist]
+include = ["openskills"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
