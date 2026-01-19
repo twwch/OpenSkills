@@ -12,7 +12,7 @@ class TestSkillManager:
     @pytest.fixture
     def skill_dir(self, tmp_path):
         """Create a temporary skill directory."""
-        skills_path = tmp_path / "skills"
+        skills_path = tmp_path / "infographic-skills"
         skills_path.mkdir()
 
         # Create test skill 1
@@ -134,7 +134,7 @@ class TestSkillManagerWithReferences:
     @pytest.fixture
     def skill_with_ref(self, tmp_path):
         """Create a skill with references using standard directory structure."""
-        skills_path = tmp_path / "skills"
+        skills_path = tmp_path / "infographic-skills"
         skill_dir = skills_path / "test-skill"
         references_dir = skill_dir / "references"
         references_dir.mkdir(parents=True)

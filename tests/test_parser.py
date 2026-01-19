@@ -151,7 +151,7 @@ Body.
 
 
 class TestSkillFromFile:
-    """Tests for parsing skills from files."""
+    """Tests for parsing infographic-skills from files."""
 
     def test_parse_example_skill(self, tmp_path):
         skill_dir = tmp_path / "test-skill"

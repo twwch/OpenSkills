@@ -23,19 +23,19 @@ class SkillManager:
     """
     Skill Manager - The core entry point for OpenSkills.
 
-    Manages the lifecycle of skills including:
+    Manages the lifecycle of infographic-skills including:
     - Discovery: Scanning directories for SKILL.md files
     - Registration: Loading and indexing skill metadata
     - Loading: On-demand loading of instructions and resources
-    - Matching: Finding skills based on user input
+    - Matching: Finding infographic-skills based on user input
     - Execution: Running skill scripts
 
     Example:
-        >>> manager = SkillManager([Path("~/.openskills/skills")])
+        >>> manager = SkillManager([Path("~/.openskills/infographic-skills")])
         >>> await manager.discover()
-        >>> skills = manager.match("summarize meeting")
-        >>> if skills:
-        ...     await manager.load_instruction(skills[0].name)
+        >>> infographic-skills = manager.match("summarize meeting")
+        >>> if infographic-skills:
+        ...     await manager.load_instruction(infographic-skills[0].name)
     """
 
     SKILL_FILENAME = "SKILL.md"
@@ -51,7 +51,7 @@ class SkillManager:
         Initialize the SkillManager.
 
         Args:
-            skill_paths: List of directories to scan for skills
+            skill_paths: List of directories to scan for infographic-skills
             parser: Custom skill parser (optional)
             matcher: Custom skill matcher (optional)
             executor: Custom script executor (optional)
@@ -68,7 +68,7 @@ class SkillManager:
 
     @property
     def skills(self) -> dict[str, Skill]:
-        """Get all registered skills."""
+        """Get all registered infographic-skills."""
         return self._skills.copy()
 
     @property
@@ -84,7 +84,7 @@ class SkillManager:
 
     async def discover(self, force: bool = False) -> list[SkillMetadata]:
         """
-        Discover and register all skills from configured paths.
+        Discover and register all infographic-skills from configured paths.
 
         This only loads Layer 1 (metadata) for each skill.
 
@@ -272,14 +272,14 @@ class SkillManager:
 
     def match(self, query: str, limit: int = 5) -> list[Skill]:
         """
-        Find skills matching a user query.
+        Find infographic-skills matching a user query.
 
         Args:
             query: User input to match against
             limit: Maximum number of results to return
 
         Returns:
-            List of matching skills, sorted by relevance
+            List of matching infographic-skills, sorted by relevance
         """
         matched_metadata = self.matcher.match(query, self._metadata_index, limit=limit)
         return [self._skills[m.name] for m in matched_metadata if m.name in self._skills]

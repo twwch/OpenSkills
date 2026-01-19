@@ -2,8 +2,8 @@
 SkillAgent - Automatic skill invocation for LLM conversations.
 
 This module provides an agent that automatically:
-1. Discovers and loads skills from specified directories
-2. Matches user queries to appropriate skills
+1. Discovers and loads infographic-skills from specified directories
+2. Matches user queries to appropriate infographic-skills
 3. Injects skill instructions into LLM prompts
 4. Handles conditional loading of references
 5. Executes scripts when requested by the LLM
@@ -57,15 +57,15 @@ class AgentResponse:
 
 class SkillAgent:
     """
-    Agent that automatically invokes skills based on user queries.
+    Agent that automatically invokes infographic-skills based on user queries.
 
     Usage:
         agent = SkillAgent(
-            skill_paths=[Path("~/.openskills/skills"), Path("./.skills")],
+            skill_paths=[Path("~/.openskills/infographic-skills"), Path("./.infographic-skills")],
             llm_client=OpenAICompatClient(model="gpt-4"),
         )
 
-        # Initialize (discover skills)
+        # Initialize (discover infographic-skills)
         await agent.initialize()
 
         # Chat with automatic skill invocation
@@ -95,7 +95,7 @@ class SkillAgent:
         Initialize the SkillAgent.
 
         Args:
-            skill_paths: List of directories to scan for skills
+            skill_paths: List of directories to scan for infographic-skills
             llm_client: LLM client for chat completions
             base_system_prompt: Base system prompt to use
             auto_select_skill: Automatically select matching skill
@@ -127,10 +127,10 @@ class SkillAgent:
 
     async def initialize(self) -> int:
         """
-        Initialize the agent by discovering all skills.
+        Initialize the agent by discovering all infographic-skills.
 
         Returns:
-            Number of skills discovered
+            Number of infographic-skills discovered
         """
         metadata_list = await self._manager.discover()
         self._initialized = True
@@ -215,9 +215,15 @@ class SkillAgent:
         if self.auto_select_skill and not self._context.active_skill:
             matched = self._manager.match(content, limit=1)
             if matched:
-                # Check if match score is above threshold
+                # Keyword match found
                 await self.select_skill(matched[0].name)
                 skill_used = matched[0].name
+            else:
+                # No keyword match, use LLM to select
+                llm_selected = await self._llm_select_skill(content)
+                if llm_selected:
+                    await self.select_skill(llm_selected)
+                    skill_used = llm_selected
 
         # Load applicable references FIRST (so they're included in the prompt)
         references_loaded = []
@@ -286,6 +292,11 @@ class SkillAgent:
             matched = self._manager.match(content, limit=1)
             if matched:
                 await self.select_skill(matched[0].name)
+            else:
+                # No keyword match, use LLM to select
+                llm_selected = await self._llm_select_skill(content)
+                if llm_selected:
+                    await self.select_skill(llm_selected)
 
         # Load applicable references FIRST (so they're included in the prompt)
         if self.auto_load_references and self._context.active_skill:
@@ -394,6 +405,58 @@ class SkillAgent:
                         pass
 
         return loaded
+
+    async def _llm_select_skill(self, query: str) -> str | None:
+        """
+        Use LLM to intelligently select the most appropriate skill.
+
+        Args:
+            query: User input
+
+        Returns:
+            Selected skill name, or None if no match
+        """
+        all_metadata = self._manager.get_all_metadata()
+        if not all_metadata:
+            return None
+
+        # Build skill catalog for LLM
+        skills_desc = "\n".join(
+            f"{i+1}. {m['name']}: {m['description']}"
+            for i, m in enumerate(all_metadata)
+        )
+
+        eval_prompt = f"""Based on the user's input, select the most appropriate skill from the list below.
+If none of the infographic-skills are relevant, respond with "NONE".
+
+User input:
+```
+{query[:500]}
+```
+
+Available infographic-skills:
+{skills_desc}
+
+Respond with ONLY the skill name (e.g., "meeting-summary") or "NONE". No explanation needed."""
+
+        try:
+            response = await self.llm_client.chat(
+                messages=[Message.user(eval_prompt)],
+                system="You are a skill router. Select the most appropriate skill based on the user's intent. Respond with only the skill name or NONE.",
+                temperature=0,
+                max_tokens=50,
+            )
+
+            result = response.content.strip().strip('"').strip("'")
+
+            # Check if result matches a skill name
+            for m in all_metadata:
+                if m["name"].lower() == result.lower():
+                    return m["name"]
+
+            return None
+        except Exception:
+            return None
 
     async def _evaluate_reference_conditions(
         self, context: str, references: list
@@ -536,7 +599,7 @@ async def create_agent(
 
     Example:
         agent = await create_agent(
-            skill_paths=["~/.openskills/skills"],
+            skill_paths=["~/.openskills/infographic-skills"],
             model="gpt-4-turbo",
             auto_execute_scripts=True,
         )

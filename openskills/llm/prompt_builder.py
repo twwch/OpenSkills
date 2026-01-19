@@ -19,7 +19,7 @@ class PromptBuilder:
 
     SKILL_CATALOG_TEMPLATE = """## Available Skills
 
-You have access to the following skills. When the user's request matches a skill, you should use it.
+You have access to the following infographic-skills. When the user's request matches a skill, you should use it.
 
 {skills_list}
 
@@ -48,7 +48,7 @@ To invoke a script, use the format: `[INVOKE:{{script_name}}]` with any required
         """
         Build a skill catalog prompt (Layer 1).
 
-        This is used to show the LLM what skills are available
+        This is used to show the LLM what infographic-skills are available
         without loading all their instructions.
 
         Args:
@@ -126,7 +126,7 @@ To invoke a script, use the format: `[INVOKE:{{script_name}}]` with any required
 
         Args:
             base_prompt: Base system prompt
-            skill_catalog: Available skills for discovery
+            skill_catalog: Available infographic-skills for discovery
             active_skill: Currently active skill
 
         Returns:

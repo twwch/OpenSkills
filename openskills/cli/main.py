@@ -1,5 +1,5 @@
 """
-OpenSkills CLI - Command line interface for managing and using skills.
+OpenSkills CLI - Command line interface for managing and using infographic-skills.
 """
 
 import asyncio
@@ -26,8 +26,8 @@ console = Console()
 
 # Default skill paths
 DEFAULT_SKILL_PATHS = [
-    Path("~/.openskills/skills"),
-    Path("./.skills"),
+    Path("~/.openskills/infographic-skills"),
+    Path("./.infographic-skills"),
 ]
 
 
@@ -42,7 +42,7 @@ def list(
     path: Optional[Path] = typer.Option(
         None,
         "--path", "-p",
-        help="Additional path to scan for skills",
+        help="Additional path to scan for infographic-skills",
     ),
     verbose: bool = typer.Option(
         False,
@@ -50,7 +50,7 @@ def list(
         help="Show detailed information",
     ),
 ):
-    """List all available skills."""
+    """List all available infographic-skills."""
     paths = DEFAULT_SKILL_PATHS.copy()
     if path:
         paths.append(path)
@@ -61,7 +61,7 @@ def list(
         metadata_list = await manager.discover()
 
         if not metadata_list:
-            console.print("[yellow]No skills found.[/yellow]")
+            console.print("[yellow]No infographic-skills found.[/yellow]")
             console.print(f"Searched in: {', '.join(str(p) for p in paths)}")
             return
 
@@ -94,7 +94,7 @@ def show(
     path: Optional[Path] = typer.Option(
         None,
         "--path", "-p",
-        help="Additional path to scan for skills",
+        help="Additional path to scan for infographic-skills",
     ),
 ):
     """Show detailed information about a skill."""
@@ -357,11 +357,11 @@ scripts: []
 
 @app.command()
 def match(
-    query: str = typer.Argument(..., help="Query to match against skills"),
+    query: str = typer.Argument(..., help="Query to match against infographic-skills"),
     path: Optional[Path] = typer.Option(
         None,
         "--path", "-p",
-        help="Additional path to scan for skills",
+        help="Additional path to scan for infographic-skills",
     ),
     limit: int = typer.Option(
         5,
@@ -369,7 +369,7 @@ def match(
         help="Maximum number of results",
     ),
 ):
-    """Find skills matching a query."""
+    """Find infographic-skills matching a query."""
     paths = DEFAULT_SKILL_PATHS.copy()
     if path:
         paths.append(path)
@@ -381,7 +381,7 @@ def match(
         matched = manager.match(query)[:limit]
 
         if not matched:
-            console.print(f"[yellow]No skills match: {query}[/yellow]")
+            console.print(f"[yellow]No infographic-skills match: {query}[/yellow]")
             return
 
         console.print(f"[bold]Skills matching: [cyan]{query}[/cyan][/bold]\n")
@@ -399,7 +399,7 @@ def run(
     path: Optional[Path] = typer.Option(
         None,
         "--path", "-p",
-        help="Additional path to scan for skills",
+        help="Additional path to scan for infographic-skills",
     ),
 ):
     """Run a skill script."""
@@ -427,7 +427,7 @@ def main():
     """
     OpenSkills - An open-source Agent Skill framework.
 
-    Implements the progressive disclosure architecture for AI agent skills.
+    Implements the progressive disclosure architecture for AI agent infographic-skills.
     """
     pass
 

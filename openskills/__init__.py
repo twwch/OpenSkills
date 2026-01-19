@@ -1,7 +1,7 @@
 """
 OpenSkills - An open-source Agent Skill framework.
 
-Implements the progressive disclosure architecture for AI agent skills,
+Implements the progressive disclosure architecture for AI agent infographic-skills,
 compatible with Claude Code's skill system.
 
 Quick Start:
@@ -9,7 +9,7 @@ Quick Start:
 
     # Create and initialize agent
     agent = await create_agent(
-        skill_paths=["~/.openskills/skills"],
+        skill_paths=["~/.openskills/infographic-skills"],
         model="gpt-4",
     )
 

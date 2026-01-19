@@ -36,9 +36,9 @@ import asyncio
 from openskills import create_agent
 
 async def main():
-    # Create agent with skills
+    # Create agent with infographic-skills
     agent = await create_agent(
-        skill_paths=["./skills"],
+        skill_paths=["./infographic-skills"],
         api_key="your-api-key",
         model="gpt-4",
     )
@@ -57,9 +57,9 @@ asyncio.run(main())
 from pathlib import Path
 from openskills import SkillManager
 
-manager = SkillManager([Path("./skills")])
+manager = SkillManager([Path("./infographic-skills")])
 
-# Discover skills (Layer 1 - Metadata)
+# Discover infographic-skills (Layer 1 - Metadata)
 await manager.discover()
 
 # Match user query
@@ -216,7 +216,7 @@ client = create_client("azure", deployment="gpt-4")
 
 # Use with SkillAgent
 agent = SkillAgent(
-    skill_paths=["./skills"],
+    skill_paths=["./infographic-skills"],
     llm_client=client,
 )
 ```
@@ -239,7 +239,7 @@ python demo.py
 ## CLI Commands
 
 ```bash
-# List all skills
+# List all infographic-skills
 openskills list
 
 # Show skill details
@@ -248,7 +248,7 @@ openskills show meeting-summary
 # Validate a skill
 openskills validate ./my-skill/
 
-# Match query to skills
+# Match query to infographic-skills
 openskills match "summarize meeting"
 ```
 

@@ -1,7 +1,7 @@
 """
-Skill Matcher - Matches user queries to skills.
+Skill Matcher - Matches user queries to infographic-skills.
 
-The matcher uses various strategies to find the most relevant skills
+The matcher uses various strategies to find the most relevant infographic-skills
 for a given user input.
 """
 

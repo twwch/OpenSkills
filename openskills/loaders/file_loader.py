@@ -1,7 +1,7 @@
 """
-File system loader for skills.
+File system loader for infographic-skills.
 
-Loads skills from local file system directories.
+Loads infographic-skills from local file system directories.
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ from openskills.core.skill import Skill
 
 class FileLoader:
     """
-    Loads skills from the local file system.
+    Loads infographic-skills from the local file system.
 
     Scans directories for SKILL.md files and parses them into Skill objects.
     """
@@ -35,7 +35,7 @@ class FileLoader:
         metadata_only: bool = True,
     ) -> AsyncIterator[Skill]:
         """
-        Load skills from a directory.
+        Load infographic-skills from a directory.
 
         Args:
             directory: Directory to scan

@@ -14,7 +14,7 @@ class SkillMetadata(BaseModel):
 
     Contains essential information for skill discovery and matching.
     This should be kept lightweight to minimize memory usage when
-    many skills are registered.
+    many infographic-skills are registered.
     """
 
     name: str = Field(
