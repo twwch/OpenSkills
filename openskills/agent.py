@@ -42,6 +42,9 @@ class ConversationContext:
     active_skill: Skill | None = None
     state: AgentState = AgentState.IDLE
     loaded_references: list[str] = field(default_factory=list)
+    # 新增：Reference 摘要缓存，用于跨轮次保持记忆
+    # key: reference path, value: summary
+    reference_summaries: dict[str, str] = field(default_factory=dict)
     metadata: dict = field(default_factory=dict)
 
 
@@ -181,6 +184,7 @@ class SkillAgent:
         self._context.active_skill = None
         self._context.state = AgentState.IDLE
         self._context.loaded_references = []
+        # 注意：不清空 reference_summaries，保持跨 skill 的记忆
 
     async def chat(
         self,
@@ -230,8 +234,17 @@ class SkillAgent:
         if self.auto_load_references and self._context.active_skill:
             references_loaded = await self._load_applicable_references(content)
 
-        # Build system prompt (now includes loaded references)
-        system_prompt = self._build_system_prompt(content)
+        # 检查是否需要重新加载之前的 Reference 完整内容
+        recalled_refs = []
+        if self._context.reference_summaries:
+            need_recall = await self._check_need_recall(content)
+            for ref_path in need_recall:
+                recalled_content = await self._reload_reference(ref_path)
+                if recalled_content:
+                    recalled_refs.append((ref_path, recalled_content))
+
+        # Build system prompt (now includes loaded references and recalled content)
+        system_prompt = self._build_system_prompt(content, recalled_refs)
 
         # Call LLM
         response = await self.llm_client.chat(
@@ -250,6 +263,15 @@ class SkillAgent:
         scripts_executed = []
         if self.auto_execute_scripts and self._context.active_skill:
             scripts_executed = await self._handle_script_invocations(response.content)
+
+        # 当前轮结束后，为新加载的 Reference 生成摘要（用于后续轮次记忆）
+        if references_loaded and self._context.active_skill:
+            for ref_path in references_loaded:
+                if ref_path not in self._context.reference_summaries:
+                    ref = self._context.active_skill.resources.get_reference(ref_path)
+                    if ref and ref.content:
+                        summary = await self._generate_reference_summary(ref_path, ref.content)
+                        self._context.reference_summaries[ref_path] = summary
 
         return AgentResponse(
             content=response.content,
@@ -299,11 +321,21 @@ class SkillAgent:
                     await self.select_skill(llm_selected)
 
         # Load applicable references FIRST (so they're included in the prompt)
+        references_loaded = []
         if self.auto_load_references and self._context.active_skill:
-            await self._load_applicable_references(content)
+            references_loaded = await self._load_applicable_references(content)
 
-        # Build system prompt (now includes loaded references)
-        system_prompt = self._build_system_prompt(content)
+        # 检查是否需要重新加载之前的 Reference 完整内容
+        recalled_refs = []
+        if self._context.reference_summaries:
+            need_recall = await self._check_need_recall(content)
+            for ref_path in need_recall:
+                recalled_content = await self._reload_reference(ref_path)
+                if recalled_content:
+                    recalled_refs.append((ref_path, recalled_content))
+
+        # Build system prompt (now includes loaded references and recalled content)
+        system_prompt = self._build_system_prompt(content, recalled_refs)
 
         # Stream response
         full_response = ""
@@ -321,13 +353,58 @@ class SkillAgent:
         assistant_message = Message.assistant(full_response)
         self._context.messages.append(assistant_message)
 
-    def _build_system_prompt(self, current_input: str) -> str:
-        """Build the system prompt based on current state."""
+        # 当前轮结束后，为新加载的 Reference 生成摘要（用于后续轮次记忆）
+        if references_loaded and self._context.active_skill:
+            for ref_path in references_loaded:
+                if ref_path not in self._context.reference_summaries:
+                    ref = self._context.active_skill.resources.get_reference(ref_path)
+                    if ref and ref.content:
+                        summary = await self._generate_reference_summary(ref_path, ref.content)
+                        self._context.reference_summaries[ref_path] = summary
+
+    def _build_system_prompt(
+        self,
+        current_input: str,
+        recalled_refs: list[tuple[str, str]] | None = None
+    ) -> str:
+        """
+        Build the system prompt based on current state.
+
+        Args:
+            current_input: 当前用户输入
+            recalled_refs: 重新加载的 Reference 列表 [(path, content), ...]
+        """
         parts = []
 
         # Add base system prompt
         if self.base_system_prompt:
             parts.append(self.base_system_prompt)
+
+        # 注入之前加载的 Reference 摘要（保持跨轮次记忆）
+        # 排除当前轮已加载完整内容的 reference
+        current_loaded = set(self._context.loaded_references)
+        recalled_paths = set(path for path, _ in (recalled_refs or []))
+        historical_summaries = {
+            path: summary
+            for path, summary in self._context.reference_summaries.items()
+            if path not in current_loaded or path in recalled_paths
+        }
+
+        if historical_summaries:
+            summaries_text = "\n".join(
+                f"- {path}: {summary}"
+                for path, summary in historical_summaries.items()
+            )
+            parts.append(
+                f"## 之前加载的参考资料摘要（可用于回顾）\n{summaries_text}"
+            )
+
+        # 注入重新加载的 Reference 完整内容
+        if recalled_refs:
+            for ref_path, ref_content in recalled_refs:
+                parts.append(
+                    f"## 重新加载的参考资料: {ref_path}\n{ref_content}"
+                )
 
         # Add skill content
         if self._context.active_skill:
@@ -515,6 +592,106 @@ Respond with one line per reference in format: "1. YES" or "1. NO"
             # On error, default to not loading (conservative)
             return [False] * len(references)
 
+    async def _generate_reference_summary(self, ref_path: str, content: str) -> str:
+        """
+        为 Reference 生成简短摘要，用于后续轮次的记忆保持。
+
+        Args:
+            ref_path: Reference 的路径
+            content: Reference 的完整内容
+
+        Returns:
+            简短摘要（约50-100字）
+        """
+        # 截取内容前2000字符用于生成摘要
+        content_preview = content[:2000]
+
+        try:
+            response = await self.llm_client.chat(
+                messages=[Message.user(
+                    f"请用50-100字总结这个文档的核心要点，只输出摘要内容：\n\n{content_preview}"
+                )],
+                system="你是一个摘要助手，生成简洁准确的摘要。只输出摘要，不要有任何前缀。",
+                temperature=0,
+                max_tokens=150,
+            )
+            return response.content.strip()
+        except Exception:
+            # 摘要生成失败时，使用内容前100字符作为简单摘要
+            return content[:100] + "..."
+
+    async def _check_need_recall(self, query: str) -> list[str]:
+        """
+        检测当前问题是否需要重新加载之前的 Reference 完整内容。
+
+        Args:
+            query: 用户当前的问题
+
+        Returns:
+            需要重新加载的 Reference 路径列表
+        """
+        if not self._context.reference_summaries:
+            return []
+
+        # 构建摘要列表
+        summaries_text = "\n".join(
+            f"{i+1}. {path}: {summary}"
+            for i, (path, summary) in enumerate(self._context.reference_summaries.items())
+        )
+
+        try:
+            response = await self.llm_client.chat(
+                messages=[Message.user(f"""用户当前问题：
+{query}
+
+之前加载过的参考资料摘要：
+{summaries_text}
+
+判断：回答这个问题是否需要重新查看某个参考资料的完整内容？
+如果需要，回复对应的编号（如 "1" 或 "1,3"）；如果不需要，回复 "无"。
+只回复编号或"无"，不要解释。""")],
+                system="你是一个精确的判断助手。",
+                temperature=0,
+                max_tokens=50,
+            )
+
+            result = response.content.strip()
+            if result == "无" or result.lower() == "none":
+                return []
+
+            # 解析需要重新加载的 reference
+            needed = []
+            paths = list(self._context.reference_summaries.keys())
+            for num in re.findall(r'\d+', result):
+                idx = int(num) - 1
+                if 0 <= idx < len(paths):
+                    needed.append(paths[idx])
+
+            return needed
+        except Exception:
+            return []
+
+    async def _reload_reference(self, ref_path: str) -> str | None:
+        """
+        重新加载指定的 Reference 完整内容。
+
+        Args:
+            ref_path: Reference 路径
+
+        Returns:
+            Reference 完整内容，或 None
+        """
+        if not self._context.active_skill:
+            return None
+
+        try:
+            content = await self._manager.load_reference(
+                self._context.active_skill.name, ref_path
+            )
+            return content
+        except Exception:
+            return None
+
     async def _handle_script_invocations(self, response: str) -> list[str]:
         """Handle script invocations in the response."""
         if not self._context.active_skill:
@@ -573,6 +750,7 @@ Respond with one line per reference in format: "1. YES" or "1. NO"
             "active_skill": self._context.active_skill.name if self._context.active_skill else None,
             "message_count": len(self._context.messages),
             "loaded_references": self._context.loaded_references.copy(),
+            "reference_summaries": list(self._context.reference_summaries.keys()),
             "available_skills": self.available_skills,
         }
 
