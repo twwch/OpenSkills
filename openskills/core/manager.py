@@ -6,9 +6,11 @@ management. It implements the progressive disclosure pattern by
 lazy-loading skill content on demand.
 """
 
+from __future__ import annotations
+
 import asyncio
 from pathlib import Path
-from typing import AsyncIterator
+from typing import AsyncIterator, Self
 
 from openskills.core.parser import SkillParser
 from openskills.core.skill import Skill
@@ -46,6 +48,8 @@ class SkillManager:
         parser: SkillParser | None = None,
         matcher: SkillMatcher | None = None,
         executor: ScriptExecutor | None = None,
+        use_sandbox: bool = False,
+        sandbox_base_url: str = "http://localhost:8080",
     ):
         """
         Initialize the SkillManager.
@@ -55,16 +59,41 @@ class SkillManager:
             parser: Custom skill parser (optional)
             matcher: Custom skill matcher (optional)
             executor: Custom script executor (optional)
+            use_sandbox: Whether to execute scripts in AIO Sandbox
+            sandbox_base_url: Base URL of the sandbox server
         """
         self.skill_paths = skill_paths or []
         self.parser = parser or SkillParser()
         self.matcher = matcher or SkillMatcher()
         self.executor = executor or ScriptExecutor()
+        self.use_sandbox = use_sandbox
+        self.sandbox_base_url = sandbox_base_url
 
         # Internal state
         self._skills: dict[str, Skill] = {}
         self._metadata_index: list[SkillMetadata] = []
         self._discovered = False
+
+        # Sandbox manager (lazy initialized)
+        self._sandbox_manager: "SandboxManager | None" = None
+
+    async def __aenter__(self) -> Self:
+        """Enter async context (required for sandbox mode)."""
+        if self.use_sandbox:
+            from openskills.sandbox.manager import SandboxManager, SandboxStrategy
+
+            self._sandbox_manager = SandboxManager(
+                base_url=self.sandbox_base_url,
+                strategy=SandboxStrategy.PER_SKILL,
+            )
+            await self._sandbox_manager.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit async context and cleanup sandbox."""
+        if self._sandbox_manager:
+            await self._sandbox_manager.__aexit__(exc_type, exc_val, exc_tb)
+            self._sandbox_manager = None
 
     @property
     def skills(self) -> dict[str, Skill]:
@@ -235,6 +264,7 @@ class SkillManager:
         self,
         skill_name: str,
         script_name: str,
+        use_sandbox: bool | None = None,
         **kwargs,
     ) -> str:
         """
@@ -243,6 +273,7 @@ class SkillManager:
         Args:
             skill_name: Name of the skill
             script_name: Name of the script to execute
+            use_sandbox: Override sandbox setting for this execution
             **kwargs: Arguments to pass to the script
 
         Returns:
@@ -250,6 +281,7 @@ class SkillManager:
 
         Raises:
             ValueError: If skill or script not found
+            RuntimeError: If sandbox is requested but manager not initialized
         """
         skill = self._skills.get(skill_name)
         if not skill:
@@ -263,10 +295,49 @@ class SkillManager:
         if not resolved_path or not resolved_path.exists():
             raise ValueError(f"Script file not found: {script.path}")
 
-        return await self.executor.execute(
-            script_path=resolved_path,
-            timeout=script.timeout,
-            sandbox=script.sandbox,
+        # Determine if sandbox should be used
+        should_use_sandbox = use_sandbox if use_sandbox is not None else self.use_sandbox
+
+        if should_use_sandbox:
+            return await self._execute_in_sandbox(
+                skill=skill,
+                script_path=resolved_path,
+                timeout=script.timeout,
+                **kwargs,
+            )
+        else:
+            return await self.executor.execute(
+                script_path=resolved_path,
+                timeout=script.timeout,
+                sandbox=script.sandbox,
+                **kwargs,
+            )
+
+    async def _execute_in_sandbox(
+        self,
+        skill: Skill,
+        script_path: Path,
+        timeout: int,
+        **kwargs,
+    ) -> str:
+        """Execute a script in the sandbox environment."""
+        if not self._sandbox_manager:
+            raise RuntimeError(
+                "Sandbox manager not initialized. "
+                "Use 'async with SkillManager(...) as manager:' when use_sandbox=True"
+            )
+
+        # Get executor with skill's dependencies
+        dependency = skill.resources.dependency
+        executor = await self._sandbox_manager.get_executor(
+            skill_name=skill.name,
+            dependency=dependency if dependency.has_dependencies() else None,
+        )
+
+        # Execute the script
+        return await executor.execute(
+            script_path=script_path,
+            timeout=float(timeout),
             **kwargs,
         )
 

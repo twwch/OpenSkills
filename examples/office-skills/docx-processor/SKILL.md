@@ -14,6 +14,10 @@ tags:
   - document
   - word
 
+dependency:
+  python:
+    - python-docx>=0.8.11
+
 references:
   - path: references/docx-guide.md
     condition: 当需要了解 docx 文件结构或处理方式时

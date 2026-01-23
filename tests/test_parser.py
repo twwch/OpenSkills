@@ -135,6 +135,51 @@ Body.
         assert skill.scripts[0].name == "upload"
         assert skill.scripts[0].path == "scripts/upload.py"
 
+    def test_parse_with_dependency(self):
+        content = """---
+name: docx-processor
+description: Process DOCX files
+dependency:
+  python:
+    - PyMuPDF==1.23.8
+    - python-docx==0.8.11
+    - Pillow>=9.0
+  system:
+    - mkdir -p output/images
+scripts:
+  - name: read_docx
+    path: scripts/read_docx.py
+    description: Read DOCX file
+---
+
+# DOCX Processor
+"""
+        parser = SkillParser()
+        skill = parser.parse_content(content)
+
+        assert skill.resources.dependency.has_dependencies()
+        assert len(skill.resources.dependency.python) == 3
+        assert "PyMuPDF==1.23.8" in skill.resources.dependency.python
+        assert len(skill.resources.dependency.system) == 1
+        assert skill.resources.dependency.system[0] == "mkdir -p output/images"
+        pip_cmd = skill.resources.dependency.get_pip_install_command()
+        assert "PyMuPDF==1.23.8" in pip_cmd
+
+    def test_parse_without_dependency(self):
+        content = """---
+name: simple
+description: Simple skill without dependencies
+---
+
+Body.
+"""
+        parser = SkillParser()
+        skill = parser.parse_content(content)
+
+        assert not skill.resources.dependency.has_dependencies()
+        assert skill.resources.dependency.python == []
+        assert skill.resources.dependency.system == []
+
     def test_parse_missing_required_fields(self):
         content = """---
 name: test

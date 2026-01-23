@@ -90,6 +90,8 @@ class SkillAgent:
         skill_match_threshold: float = 0.5,
         auto_load_references: bool = True,
         auto_execute_scripts: bool = False,  # Safety: require explicit opt-in
+        use_sandbox: bool = False,
+        sandbox_base_url: str = "http://localhost:8080",
         on_skill_selected: Callable[[Skill], None] | None = None,
         on_reference_loaded: Callable[[str, str], None] | None = None,
         on_script_executed: Callable[[str, str], None] | None = None,
@@ -105,6 +107,8 @@ class SkillAgent:
             skill_match_threshold: Minimum score for skill matching
             auto_load_references: Automatically load matching references
             auto_execute_scripts: Automatically execute scripts (use with caution)
+            use_sandbox: Execute scripts in sandbox environment
+            sandbox_base_url: URL of the sandbox server
             on_skill_selected: Callback when a skill is selected
             on_reference_loaded: Callback when a reference is loaded
             on_script_executed: Callback when a script is executed
@@ -116,6 +120,8 @@ class SkillAgent:
         self.skill_match_threshold = skill_match_threshold
         self.auto_load_references = auto_load_references
         self.auto_execute_scripts = auto_execute_scripts
+        self.use_sandbox = use_sandbox
+        self.sandbox_base_url = sandbox_base_url
 
         # Callbacks
         self.on_skill_selected = on_skill_selected
@@ -123,10 +129,28 @@ class SkillAgent:
         self.on_script_executed = on_script_executed
 
         # Internal state
-        self._manager = SkillManager(self.skill_paths)
+        self._manager = SkillManager(
+            self.skill_paths,
+            use_sandbox=use_sandbox,
+            sandbox_base_url=sandbox_base_url,
+        )
         self._prompt_builder = PromptBuilder()
         self._context = ConversationContext()
         self._initialized = False
+        self._sandbox_entered = False
+
+    async def __aenter__(self):
+        """Enter async context (required for sandbox mode)."""
+        if self.use_sandbox:
+            await self._manager.__aenter__()
+            self._sandbox_entered = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit async context and cleanup sandbox."""
+        if self._sandbox_entered:
+            await self._manager.__aexit__(exc_type, exc_val, exc_tb)
+            self._sandbox_entered = False
 
     async def initialize(self) -> int:
         """
@@ -135,6 +159,10 @@ class SkillAgent:
         Returns:
             Number of infographic-skills discovered
         """
+        # Auto-enter sandbox context if needed
+        if self.use_sandbox and not self._sandbox_entered:
+            await self.__aenter__()
+
         metadata_list = await self._manager.discover()
         self._initialized = True
         return len(metadata_list)
@@ -760,6 +788,8 @@ async def create_agent(
     api_key: str | None = None,
     base_url: str | None = None,
     model: str = "gpt-4",
+    use_sandbox: bool = False,
+    sandbox_base_url: str = "http://localhost:8080",
     **kwargs,
 ) -> SkillAgent:
     """
@@ -770,18 +800,30 @@ async def create_agent(
         api_key: LLM API key
         base_url: LLM base URL
         model: Model to use
+        use_sandbox: Execute scripts in sandbox environment
+        sandbox_base_url: URL of the sandbox server
         **kwargs: Additional SkillAgent options
 
     Returns:
         Initialized SkillAgent
 
     Example:
+        # Local execution
         agent = await create_agent(
             skill_paths=["~/.openskills/infographic-skills"],
             model="gpt-4-turbo",
             auto_execute_scripts=True,
         )
         response = await agent.chat("帮我总结会议")
+
+        # Sandbox execution
+        agent = await create_agent(
+            skill_paths=["./skills"],
+            use_sandbox=True,
+            sandbox_base_url="http://localhost:8080",
+            auto_execute_scripts=True,
+        )
+        response = await agent.chat("处理文档")
     """
     from openskills.llm.openai_compat import OpenAICompatClient
 
@@ -792,7 +834,13 @@ async def create_agent(
     )
 
     paths = [Path(p) for p in skill_paths]
-    agent = SkillAgent(skill_paths=paths, llm_client=client, **kwargs)
+    agent = SkillAgent(
+        skill_paths=paths,
+        llm_client=client,
+        use_sandbox=use_sandbox,
+        sandbox_base_url=sandbox_base_url,
+        **kwargs,
+    )
     await agent.initialize()
 
     return agent

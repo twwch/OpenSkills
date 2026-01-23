@@ -13,6 +13,10 @@ tags:
   - summary
   - productivity
 
+dependency:
+  system:
+    - mkdir -p /tmp/openskills-uploads
+
 references:
   - path: references/finance-handbook.md
     condition: 当会议内容涉及财务、预算或金额时加载

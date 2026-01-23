@@ -169,10 +169,14 @@ dev = [
     { name = "pytest-asyncio" },
     { name = "ruff" },
 ]
+sandbox = [
+    { name = "httpx" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "httpx", specifier = ">=0.25" },
+    { name = "httpx", marker = "extra == 'sandbox'", specifier = ">=0.25" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23" },
@@ -181,7 +185,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.1" },
     { name = "typer", specifier = ">=0.9" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "sandbox"]
 
 [[package]]
 name = "packaging"

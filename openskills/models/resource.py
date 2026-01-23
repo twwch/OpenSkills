@@ -21,6 +21,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from openskills.models.dependency import SkillDependency
+
 
 # Standard directory names for skill resources
 REFERENCES_DIR = "references"
@@ -174,6 +176,7 @@ class SkillResources(BaseModel):
 
     references: list[Reference] = Field(default_factory=list)
     scripts: list[Script] = Field(default_factory=list)
+    dependency: SkillDependency = Field(default_factory=SkillDependency)
 
     def get_reference(self, path: str) -> Reference | None:
         """Get a reference by path."""

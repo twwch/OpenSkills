@@ -11,6 +11,7 @@ from typing import Any
 from openskills.core.skill import Skill
 from openskills.models.metadata import SkillMetadata
 from openskills.models.instruction import SkillInstruction
+from openskills.models.dependency import SkillDependency
 from openskills.models.resource import Reference, Script, SkillResources, ReferenceMode
 from openskills.utils.frontmatter import parse_frontmatter
 
@@ -123,6 +124,9 @@ class SkillParser:
         scripts = []
         declared_paths = set()  # Track paths declared in frontmatter
 
+        # Parse dependency configuration
+        dependency = SkillDependency.from_dict(frontmatter.get("dependency"))
+
         # Parse references from frontmatter
         for ref_data in frontmatter.get("references", []):
             if isinstance(ref_data, dict):
@@ -165,7 +169,7 @@ class SkillParser:
                     sandbox=script_data.get("sandbox", True),
                 ))
 
-        return SkillResources(references=references, scripts=scripts)
+        return SkillResources(references=references, scripts=scripts, dependency=dependency)
 
     def _discover_references(
         self, references_dir: Path, declared_paths: set[str]

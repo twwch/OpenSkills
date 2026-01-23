@@ -15,6 +15,10 @@ tags:
   - excel
   - data
 
+dependency:
+  python:
+    - openpyxl>=3.1.0
+
 references:
   - path: references/excel-guide.md
     condition: 当需要了解 Excel 文件处理方式或数据分析方法时

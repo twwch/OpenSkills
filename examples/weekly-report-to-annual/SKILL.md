@@ -14,6 +14,11 @@ tags:
   - email
   - productivity
 
+# 使用标准库 imaplib 和 email，无需额外依赖
+dependency:
+  python: []
+  system: []
+
 references:
   - path: references/annual-report-template.md
     condition: 生成年度报告时加载
