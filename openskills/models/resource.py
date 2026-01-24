@@ -156,6 +156,12 @@ class Script(BaseModel):
         description="Whether to run in a sandboxed environment",
     )
 
+    outputs: list[str] = Field(
+        default_factory=list,
+        description="Sandbox paths to sync back to local after execution",
+        examples=[["/home/gem/output"]],
+    )
+
     _resolved_path: Path | None = None
 
     def get_invocation_hint(self) -> str:

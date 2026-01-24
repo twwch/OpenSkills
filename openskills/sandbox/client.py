@@ -70,6 +70,11 @@ class FileInfo:
     size: int = 0
     modified: str = ""
 
+    @property
+    def is_file(self) -> bool:
+        """Check if this is a file (not a directory)."""
+        return not self.is_dir
+
 
 @dataclass
 class SessionInfo:
@@ -577,13 +582,24 @@ class SandboxClient:
         data = response.json()
 
         files = []
-        for f in data.get("data", {}).get("files", []):
+        raw_files = data.get("data", {}).get("files", [])
+
+        for f in raw_files:
+            # Handle various API field name conventions
+            is_dir = (
+                f.get("is_directory") or  # AIO Sandbox format
+                f.get("is_dir") or
+                f.get("isDir") or
+                f.get("IsDir") or
+                f.get("type") == "directory" or
+                f.get("mode", "").startswith("d")  # Unix-style mode
+            )
             files.append(FileInfo(
-                name=f.get("name", ""),
-                path=f.get("path", ""),
-                is_dir=f.get("is_dir", False),
-                size=f.get("size", 0),
-                modified=f.get("modified", ""),
+                name=f.get("name") or f.get("Name", ""),
+                path=f.get("path") or f.get("Path", ""),
+                is_dir=bool(is_dir),
+                size=f.get("size") or f.get("Size") or 0,
+                modified=f.get("modified") or f.get("modified_time") or f.get("modTime") or "",
             ))
         return files
 
@@ -650,26 +666,35 @@ class SandboxClient:
         self,
         local_content: bytes,
         remote_path: str,
-        filename: str,
+        filename: str | None = None,
     ) -> str:
         """
         Upload a file to the sandbox.
 
         Args:
             local_content: File content as bytes
-            remote_path: Remote directory path
-            filename: Filename to save as
+            remote_path: Full remote file path (e.g., "/home/gem/workspace/file.pdf")
+                        or directory path if filename is provided
+            filename: Optional filename (if remote_path is a directory)
 
         Returns:
             Full path of uploaded file
         """
         client = self._ensure_client()
+
+        # 如果提供了 filename，则 remote_path 是目录
+        if filename:
+            full_path = f"{remote_path.rstrip('/')}/{filename}"
+        else:
+            full_path = remote_path
+            filename = full_path.split("/")[-1]
+
         files = {"file": (filename, local_content)}
-        data = {"path": remote_path}
+        data = {"path": full_path}
         response = await client.post("/v1/file/upload", files=files, data=data)
         response.raise_for_status()
         result = response.json()
-        return result.get("data", {}).get("path", f"{remote_path}/{filename}")
+        return result.get("data", {}).get("file_path", full_path)
 
     async def download_file(self, path: str) -> bytes:
         """
@@ -789,20 +814,11 @@ class SandboxClient:
         Returns:
             CommandResult from pip install
         """
-        client = self._ensure_client()
-        payload = {
-            "packages": packages,
-            "upgrade": upgrade,
-        }
-        response = await client.post("/v1/sandbox/packages/python", json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-        return CommandResult(
-            exit_code=0 if data.get("success") else 1,
-            stdout=data.get("data", {}).get("output", ""),
-            stderr="",
-        )
+        # 使用 pip install 命令安装
+        upgrade_flag = "--upgrade" if upgrade else ""
+        packages_str = " ".join(f'"{p}"' for p in packages)
+        cmd = f"pip install {upgrade_flag} {packages_str}".strip()
+        return await self.exec_command(cmd, timeout=300)
 
     async def install_nodejs_packages(
         self,
@@ -819,20 +835,11 @@ class SandboxClient:
         Returns:
             CommandResult from npm install
         """
-        client = self._ensure_client()
-        payload = {
-            "packages": packages,
-            "global": global_install,
-        }
-        response = await client.post("/v1/sandbox/packages/nodejs", json=payload)
-        response.raise_for_status()
-        data = response.json()
-
-        return CommandResult(
-            exit_code=0 if data.get("success") else 1,
-            stdout=data.get("data", {}).get("output", ""),
-            stderr="",
-        )
+        # 使用 npm install 命令安装
+        global_flag = "-g" if global_install else ""
+        packages_str = " ".join(packages)
+        cmd = f"npm install {global_flag} {packages_str}".strip()
+        return await self.exec_command(cmd, timeout=300)
 
     # ============================================================
     # Browser API

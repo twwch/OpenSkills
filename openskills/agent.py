@@ -164,6 +164,17 @@ class SkillAgent:
             await self.__aenter__()
 
         metadata_list = await self._manager.discover()
+
+        # Pre-install all skill dependencies in sandbox
+        if self.use_sandbox and self._manager._sandbox_manager:
+            for skill_name, skill in self._manager.skills.items():
+                dependency = skill.resources.dependency
+                if dependency and dependency.has_dependencies():
+                    await self._manager._sandbox_manager.get_executor(
+                        skill_name=skill_name,
+                        dependency=dependency,
+                    )
+
         self._initialized = True
         return len(metadata_list)
 

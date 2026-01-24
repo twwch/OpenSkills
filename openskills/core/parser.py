@@ -167,6 +167,7 @@ class SkillParser:
                     args=script_data.get("args", []),
                     timeout=script_data.get("timeout", 30),
                     sandbox=script_data.get("sandbox", True),
+                    outputs=script_data.get("outputs", []),
                 ))
 
         return SkillResources(references=references, scripts=scripts, dependency=dependency)

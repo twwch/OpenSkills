@@ -68,6 +68,7 @@ class SandboxExecutor:
         self.verbose = verbose
         self._client: SandboxClient | None = None
         self._environment_ready = False
+        self._ready_logged = False
 
     async def __aenter__(self) -> Self:
         """Enter async context and initialize sandbox client."""
@@ -92,7 +93,7 @@ class SandboxExecutor:
         await self._client.mkdir(self.SCRIPTS_DIR)
 
         self.logger.starting_agent()
-        self.logger.ready()
+        # Note: ready() is called after setup_environment() completes
 
         return self
 
@@ -166,7 +167,20 @@ class SandboxExecutor:
             results.append(result)
 
         self._environment_ready = True
+        self._log_ready_once()
         return results
+
+    def _log_ready_once(self) -> None:
+        """Log ready message only once."""
+        if not hasattr(self, '_ready_logged') or not self._ready_logged:
+            self._ready_logged = True
+            self.logger.ready()
+
+    def mark_ready(self) -> None:
+        """Mark environment as ready (call when no dependencies to install)."""
+        if not self._environment_ready:
+            self._environment_ready = True
+            self._log_ready_once()
 
     async def upload_script(
         self,

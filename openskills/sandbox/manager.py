@@ -72,6 +72,7 @@ class SandboxManager:
         # LRU cache for skill executors
         self._cache: OrderedDict[str, SandboxExecutor] = OrderedDict()
         self._persistent_executor: SandboxExecutor | None = None
+        self._installed_deps: set[str] = set()  # Track installed dependencies
         self._lock = asyncio.Lock()
         self._active = False
 
@@ -118,6 +119,14 @@ class SandboxManager:
             elif self.strategy == SandboxStrategy.PERSISTENT:
                 if not self._persistent_executor:
                     self._persistent_executor = await self._create_executor(dependency)
+                    # Track installed deps
+                    if dependency and dependency.has_dependencies():
+                        self._installed_deps.add(skill_name)
+                elif dependency and dependency.has_dependencies():
+                    # Install new dependencies if not already installed for this skill
+                    if skill_name not in self._installed_deps:
+                        await self._persistent_executor.setup_environment(dependency)
+                        self._installed_deps.add(skill_name)
                 return self._persistent_executor
 
             else:  # PER_SKILL
@@ -152,6 +161,9 @@ class SandboxManager:
         # Setup environment if dependency provided
         if dependency and dependency.has_dependencies():
             await executor.setup_environment(dependency)
+        else:
+            # No dependencies, mark as ready immediately
+            executor.mark_ready()
 
         return executor
 
@@ -174,6 +186,24 @@ class SandboxManager:
             if self._persistent_executor:
                 await self._cleanup_executor(self._persistent_executor)
                 self._persistent_executor = None
+
+            # Reset installed deps tracking
+            self._installed_deps.clear()
+
+    async def warmup(self, skill_name: str = "_default") -> SandboxExecutor:
+        """
+        Warmup the sandbox by creating an executor early.
+
+        This displays initialization logs during agent setup rather than
+        waiting until script execution.
+
+        Args:
+            skill_name: Name to cache the executor under
+
+        Returns:
+            The initialized executor
+        """
+        return await self.get_executor(skill_name, dependency=None)
 
     async def health_check(self) -> bool:
         """

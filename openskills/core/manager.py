@@ -84,9 +84,11 @@ class SkillManager:
 
             self._sandbox_manager = SandboxManager(
                 base_url=self.sandbox_base_url,
-                strategy=SandboxStrategy.PER_SKILL,
+                strategy=SandboxStrategy.PERSISTENT,  # Share executor, install deps on demand
             )
             await self._sandbox_manager.__aenter__()
+            # Warmup: initialize sandbox early to show logs during agent setup
+            await self._sandbox_manager.warmup()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -303,6 +305,7 @@ class SkillManager:
                 skill=skill,
                 script_path=resolved_path,
                 timeout=script.timeout,
+                script=script,
                 **kwargs,
             )
         else:
@@ -318,9 +321,10 @@ class SkillManager:
         skill: Skill,
         script_path: Path,
         timeout: int,
+        script: "Script | None" = None,
         **kwargs,
     ) -> str:
-        """Execute a script in the sandbox environment."""
+        """Execute a script in the sandbox environment with automatic file sync."""
         if not self._sandbox_manager:
             raise RuntimeError(
                 "Sandbox manager not initialized. "
@@ -334,12 +338,159 @@ class SkillManager:
             dependency=dependency if dependency.has_dependencies() else None,
         )
 
+        # Upload local files to sandbox and replace paths
+        kwargs = await self._upload_local_files(executor, kwargs)
+
         # Execute the script
-        return await executor.execute(
+        result = await executor.execute(
             script_path=script_path,
             timeout=float(timeout),
             **kwargs,
         )
+
+        # Download output files from sandbox
+        if script and script.outputs:
+            local_output_dir = skill.source_path.parent / "output" if skill.source_path else None
+            if local_output_dir:
+                count = await self._download_sandbox_files(executor, script.outputs, local_output_dir)
+                if count > 0:
+                    from openskills.sandbox.logger import get_logger
+                    get_logger().progress(f"共下载 {count} 个文件到 {local_output_dir}")
+
+        return result
+
+    async def _upload_local_files(
+        self,
+        executor: "SandboxExecutor",
+        kwargs: dict,
+    ) -> dict:
+        """
+        Scan kwargs for local file paths and upload to sandbox.
+
+        Returns updated kwargs with sandbox paths.
+        """
+        import os
+        import json
+
+        updated_kwargs = kwargs.copy()
+
+        # Check input_data for file paths
+        input_data = kwargs.get("input_data", "")
+        if input_data:
+            try:
+                # Try to parse as JSON
+                data = json.loads(input_data) if isinstance(input_data, str) else input_data
+                if isinstance(data, dict):
+                    updated_data = await self._process_file_paths(executor, data)
+                    updated_kwargs["input_data"] = json.dumps(updated_data, ensure_ascii=False)
+            except (json.JSONDecodeError, TypeError):
+                # Not JSON, check if it's a file path directly
+                if isinstance(input_data, str) and os.path.isfile(input_data):
+                    sandbox_path = await self._upload_single_file(executor, input_data)
+                    updated_kwargs["input_data"] = sandbox_path
+
+        return updated_kwargs
+
+    async def _process_file_paths(
+        self,
+        executor: "SandboxExecutor",
+        data: dict,
+    ) -> dict:
+        """Recursively process dict and upload any file paths found."""
+        import os
+
+        result = {}
+        for key, value in data.items():
+            if isinstance(value, str) and os.path.isfile(value):
+                # Upload file and replace with sandbox path
+                result[key] = await self._upload_single_file(executor, value)
+            elif isinstance(value, dict):
+                result[key] = await self._process_file_paths(executor, value)
+            elif isinstance(value, list):
+                result[key] = [
+                    await self._upload_single_file(executor, v) if isinstance(v, str) and os.path.isfile(v) else v
+                    for v in value
+                ]
+            else:
+                result[key] = value
+        return result
+
+    async def _upload_single_file(
+        self,
+        executor: "SandboxExecutor",
+        local_path: str,
+    ) -> str:
+        """Upload a single file to sandbox and return sandbox path."""
+        from pathlib import Path
+
+        client = executor._ensure_client()
+        local_file = Path(local_path)
+
+        # Create uploads directory
+        sandbox_uploads = "/home/gem/uploads"
+        await client.mkdir(sandbox_uploads)
+
+        # Upload file
+        content = local_file.read_bytes()
+        sandbox_path = f"{sandbox_uploads}/{local_file.name}"
+        await client.upload_file(content, sandbox_path)
+
+        return sandbox_path
+
+    async def _download_sandbox_files(
+        self,
+        executor: "SandboxExecutor",
+        sandbox_paths: list[str],
+        local_output_dir: Path,
+    ) -> int:
+        """
+        Download files from sandbox to local directory.
+
+        Returns:
+            Number of files downloaded
+        """
+        from openskills.sandbox.logger import get_logger
+
+        logger = get_logger()
+        client = executor._ensure_client()
+        local_output_dir.mkdir(parents=True, exist_ok=True)
+        downloaded_count = 0
+
+        for sandbox_path in sandbox_paths:
+            try:
+                # List files in sandbox path
+                files = await client.list_files(sandbox_path)
+                logger.progress(f"从沙箱同步文件: {sandbox_path} ({len(files)} 项)")
+
+                for file_info in files:
+
+                    if file_info.is_dir:
+                        # Recursively download directory
+                        sub_count = await self._download_sandbox_files(
+                            executor,
+                            [file_info.path],
+                            local_output_dir / file_info.name,
+                        )
+                        downloaded_count += sub_count
+                    else:
+                        # Download file
+                        try:
+                            content = await client.download_file(file_info.path)
+
+                            # Determine local path (preserve subdirectory structure)
+                            rel_path = file_info.path.replace(sandbox_path, "").lstrip("/")
+                            local_path = local_output_dir / rel_path if rel_path else local_output_dir / file_info.name
+                            local_path.parent.mkdir(parents=True, exist_ok=True)
+
+                            local_path.write_bytes(content)
+                            downloaded_count += 1
+                            logger.progress(f"  已下载: {file_info.name}")
+                        except Exception as download_err:
+                            logger.progress(f"  文件下载失败: {file_info.path} - {download_err}")
+            except Exception as e:
+                logger.progress(f"  列目录失败: {sandbox_path} - {e}")
+
+        return downloaded_count
 
     def match(self, query: str, limit: int = 5) -> list[Skill]:
         """
