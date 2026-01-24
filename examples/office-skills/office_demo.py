@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """
-Office Skills Demo
+Office Skills Demo - Office 文档处理示例
 
-演示如何使用 OpenSkills SDK 处理 Word 和 Excel 文件。
-API Key 从环境变量获取。
+演示使用 OpenSkills SDK 在沙箱环境中处理 Word 和 Excel 文件。
 
 环境变量:
     OPENAI_API_KEY: OpenAI API Key
     OPENAI_BASE_URL: (可选) API Base URL，默认 https://api.openai.com/v1
     OPENAI_MODEL: (可选) 模型名称，默认 gpt-4
+    SANDBOX_URL: (可选) 沙箱地址，默认 http://localhost:8080
+
+使用方法:
+    # 启动沙箱服务
+    docker run --rm -p 8080:8080 ghcr.io/agent-infra/sandbox:latest
+
+    # 运行示例
+    python office_demo.py
 """
 
 import asyncio
@@ -29,7 +36,6 @@ def create_sample_docx(output_path: Path) -> bool:
     """创建示例 Word 文档"""
     try:
         from docx import Document
-        from docx.shared import Pt
 
         doc = Document()
 
@@ -122,17 +128,18 @@ def create_sample_xlsx(output_path: Path) -> bool:
 # ============================================================
 
 async def demo_docx_processing():
-    """演示 Word 文档处理"""
+    """演示 Word 文档处理（沙箱模式）"""
     from openskills import create_agent
 
     print("\n" + "=" * 60)
-    print("Demo 1: Word 文档处理")
+    print("Demo 1: Word 文档处理 (沙箱模式)")
     print("=" * 60)
 
     # 从环境变量获取配置
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("[错误] 请设置 OPENAI_API_KEY 环境变量")
@@ -149,6 +156,7 @@ async def demo_docx_processing():
         return
 
     print(f"\n[示例文件] {docx_path}")
+    print(f"[沙箱地址] {sandbox_url}")
 
     # 回调函数
     def on_reference_loaded(ref_path: str, content: str):
@@ -169,7 +177,7 @@ async def demo_docx_processing():
         except:
             print(f"  结果: {result[:200]}")
 
-    # 创建 agent
+    # 创建 agent（沙箱模式）
     skills_path = Path(__file__).parent
     agent = await create_agent(
         skill_paths=[skills_path],
@@ -177,6 +185,8 @@ async def demo_docx_processing():
         base_url=base_url,
         model=model,
         auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_script_executed=on_script_executed,
     )
@@ -202,17 +212,18 @@ async def demo_docx_processing():
 
 
 async def demo_excel_processing():
-    """演示 Excel 文件处理"""
+    """演示 Excel 文件处理（沙箱模式）"""
     from openskills import create_agent
 
     print("\n" + "=" * 60)
-    print("Demo 2: Excel 文件处理")
+    print("Demo 2: Excel 文件处理 (沙箱模式)")
     print("=" * 60)
 
     # 从环境变量获取配置
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("[错误] 请设置 OPENAI_API_KEY 环境变量")
@@ -228,6 +239,7 @@ async def demo_excel_processing():
         return
 
     print(f"\n[示例文件] {xlsx_path}")
+    print(f"[沙箱地址] {sandbox_url}")
 
     # 回调函数
     def on_reference_loaded(ref_path: str, content: str):
@@ -246,7 +258,7 @@ async def demo_excel_processing():
         except:
             print(f"  结果: {result[:200]}")
 
-    # 创建 agent
+    # 创建 agent（沙箱模式）
     skills_path = Path(__file__).parent
     agent = await create_agent(
         skill_paths=[skills_path],
@@ -254,6 +266,8 @@ async def demo_excel_processing():
         base_url=base_url,
         model=model,
         auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_script_executed=on_script_executed,
     )
@@ -280,16 +294,17 @@ async def demo_excel_processing():
 
 
 async def demo_combined():
-    """组合演示：同时处理 Word 和 Excel"""
+    """组合演示：同时处理 Word 和 Excel（沙箱模式）"""
     from openskills import create_agent
 
     print("\n" + "=" * 60)
-    print("Demo 3: 组合处理 (Word + Excel)")
+    print("Demo 3: 组合处理 Word + Excel (沙箱模式)")
     print("=" * 60)
 
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("[错误] 请设置 OPENAI_API_KEY 环境变量")
@@ -303,6 +318,8 @@ async def demo_combined():
     create_sample_docx(docx_path)
     create_sample_xlsx(xlsx_path)
 
+    print(f"\n[沙箱地址] {sandbox_url}")
+
     def on_script_executed(script_name: str, result: str):
         print(f"  [执行] {script_name}")
 
@@ -313,6 +330,8 @@ async def demo_combined():
         base_url=base_url,
         model=model,
         auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_script_executed=on_script_executed,
     )
 
@@ -332,13 +351,20 @@ async def demo_combined():
 
 async def main():
     """主函数"""
-    print("=" * 60)
-    print("OpenSkills Office Demo")
-    print("=" * 60)
-    print(f"\n环境变量配置:")
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║           Office Skills Demo - 文档处理示例              ║
+║                                                          ║
+║  [前置条件] 启动沙箱服务:                                ║
+║  docker run --rm -p 8080:8080 \\                         ║
+║      ghcr.io/agent-infra/sandbox:latest                  ║
+╚══════════════════════════════════════════════════════════╝
+""")
+    print(f"环境变量配置:")
     print(f"  OPENAI_API_KEY: {'已设置' if os.environ.get('OPENAI_API_KEY') else '未设置'}")
     print(f"  OPENAI_BASE_URL: {os.environ.get('OPENAI_BASE_URL', '(默认)')}")
     print(f"  OPENAI_MODEL: {os.environ.get('OPENAI_MODEL', '(默认 gpt-4)')}")
+    print(f"  SANDBOX_URL: {os.environ.get('SANDBOX_URL', '(默认 http://localhost:8080)')}")
 
     # 检查依赖
     print(f"\n依赖检查:")
@@ -364,7 +390,7 @@ async def main():
     # 运行 demo
     # await demo_docx_processing()
     # await demo_excel_processing()
-    await demo_combined()  # 取消注释运行组合演示
+    await demo_combined()
 
 
 if __name__ == "__main__":

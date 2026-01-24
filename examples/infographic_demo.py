@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenSkills SDK Demo
+Infographic Skills Demo - 信息图生成示例
 
 演示 Reference 自动发现和 LLM 智能加载功能。
 使用 infographic-skills skill 作为测试。
@@ -9,11 +9,14 @@ OpenSkills SDK Demo
     OPENAI_API_KEY: OpenAI API Key
     OPENAI_BASE_URL: (可选) API Base URL
     OPENAI_MODEL: (可选) 模型名称，默认 gpt-4
+    SANDBOX_URL: (可选) 沙箱地址，默认 http://localhost:8080
 
-    # 或者使用 Azure OpenAI
-    AZURE_OPENAI_API_KEY: Azure API Key
-    AZURE_OPENAI_ENDPOINT: Azure Endpoint
-    AZURE_OPENAI_DEPLOYMENT: 部署名称
+使用方法:
+    # 启动沙箱服务
+    docker run --rm -p 8080:8080 ghcr.io/agent-infra/sandbox:latest
+
+    # 运行示例
+    python infographic_demo.py
 """
 
 import asyncio
@@ -27,22 +30,25 @@ sys.path.insert(0, str(project_root))
 
 
 async def demo_llm_reference_selection():
-    """演示 LLM 智能选择 Reference"""
+    """演示 LLM 智能选择 Reference（沙箱模式）"""
     from openskills import SkillAgent
     from openskills.llm.openai_compat import OpenAICompatClient
 
     print("\n" + "=" * 60)
-    print("Demo: LLM 智能选择 Skills and Reference")
+    print("Demo: LLM 智能选择 Skills and Reference (沙箱模式)")
     print("=" * 60)
 
     # 获取 API 配置
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("\n[跳过] 未设置 OPENAI_API_KEY")
         return
+
+    print(f"\n[沙箱地址] {sandbox_url}")
 
     # 回调：显示加载了哪些 reference
     def on_reference_loaded(ref_path: str, content: str):
@@ -58,22 +64,21 @@ async def demo_llm_reference_selection():
         model=model,
     )
 
-    # 创建 Agent
+    # 创建 Agent（沙箱模式）
     skills_path = Path(__file__).parent / "infographic-skills"
     agent = SkillAgent(
         skill_paths=[skills_path],
         llm_client=client,
         auto_select_skill=True,  # 自动选择 skill (关键词匹配 + LLM 智能选择)
+        auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_skill_selected=on_skill_selected,
     )
     await agent.initialize()
 
     print(f"\n[可用 Skills] {agent.available_skills}")
-
-    # 手动选择 skill
-    # print("\n[手动选择 Skill: infographic-syntax-creator]")
-    # await agent.select_skill("infographic-syntax-creator")
 
     # 测试查询 - LLM 会智能选择相关的 reference
     user_message = """帮我生成一个饼图代码，数据你随便就行"""
@@ -90,18 +95,22 @@ async def demo_llm_reference_selection():
 
 async def main():
     """主函数"""
-    print("=" * 60)
-    print("OpenSkills SDK Demo")
-    print("=" * 60)
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║       Infographic Skills Demo - 信息图生成示例           ║
+║                                                          ║
+║  [前置条件] 启动沙箱服务:                                ║
+║  docker run --rm -p 8080:8080 \\                         ║
+║      ghcr.io/agent-infra/sandbox:latest                  ║
+╚══════════════════════════════════════════════════════════╝
+""")
 
     # 显示环境配置
-    print(f"\n[环境变量]")
+    print(f"[环境变量]")
     print(f"  OPENAI_API_KEY: {'已设置' if os.environ.get('OPENAI_API_KEY') else '未设置'}")
     print(f"  OPENAI_BASE_URL: {os.environ.get('OPENAI_BASE_URL', '(默认)')}")
     print(f"  OPENAI_MODEL: {os.environ.get('OPENAI_MODEL', '(默认 gpt-4)')}")
-    print(f"  AZURE_OPENAI_ENDPOINT: {'已设置' if os.environ.get('AZURE_OPENAI_ENDPOINT') else '未设置'}")
-
-
+    print(f"  SANDBOX_URL: {os.environ.get('SANDBOX_URL', '(默认 http://localhost:8080)')}")
 
     if os.environ.get("OPENAI_API_KEY"):
         await demo_llm_reference_selection()

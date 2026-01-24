@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OpenSkills SDK Demo
+OpenSkills SDK Demo - Prompt Optimizer
 
 演示 Reference 自动发现和 LLM 智能加载功能。
 使用 prompt-optimizer skill 作为测试。
@@ -9,11 +9,19 @@ OpenSkills SDK Demo
     OPENAI_API_KEY: OpenAI API Key
     OPENAI_BASE_URL: (可选) API Base URL
     OPENAI_MODEL: (可选) 模型名称，默认 gpt-4
+    SANDBOX_URL: (可选) 沙箱地址，默认 http://localhost:8080
 
     # 或者使用 Azure OpenAI
     AZURE_OPENAI_API_KEY: Azure API Key
     AZURE_OPENAI_ENDPOINT: Azure Endpoint
     AZURE_OPENAI_DEPLOYMENT: 部署名称
+
+使用方法:
+    # 启动沙箱服务
+    docker run --rm -p 8080:8080 ghcr.io/agent-infra/sandbox:latest
+
+    # 运行示例
+    python demo.py
 """
 
 import asyncio
@@ -64,22 +72,25 @@ async def demo_auto_discovery():
 
 
 async def demo_llm_reference_selection():
-    """演示 LLM 智能选择 Reference"""
+    """演示 LLM 智能选择 Reference（沙箱模式）"""
     from openskills import SkillAgent
     from openskills.llm.openai_compat import OpenAICompatClient
 
     print("\n" + "=" * 60)
-    print("Demo 2: LLM 智能选择 Reference")
+    print("Demo 2: LLM 智能选择 Reference (沙箱模式)")
     print("=" * 60)
 
     # 获取 API 配置
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("\n[跳过] 未设置 OPENAI_API_KEY")
         return
+
+    print(f"\n[沙箱地址] {sandbox_url}")
 
     # 回调：显示加载了哪些 reference
     def on_reference_loaded(ref_path: str, content: str):
@@ -95,12 +106,15 @@ async def demo_llm_reference_selection():
         model=model,
     )
 
-    # 创建 Agent
+    # 创建 Agent（沙箱模式）
     skills_path = Path(__file__).parent / "prompt-optimizer"
     agent = SkillAgent(
         skill_paths=[skills_path],
         llm_client=client,
         auto_select_skill=False,  # 手动选择 skill
+        auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_skill_selected=on_skill_selected,
     )
@@ -131,17 +145,18 @@ async def demo_llm_reference_selection():
 
 
 async def demo_different_queries():
-    """演示不同查询加载不同 Reference"""
+    """演示不同查询加载不同 Reference（沙箱模式）"""
     from openskills import SkillAgent
     from openskills.llm.openai_compat import OpenAICompatClient
 
     print("\n" + "=" * 60)
-    print("Demo 3: 不同查询 → 不同 Reference")
+    print("Demo 3: 不同查询 → 不同 Reference (沙箱模式)")
     print("=" * 60)
 
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("\n[跳过] 未设置 OPENAI_API_KEY")
@@ -168,6 +183,9 @@ async def demo_different_queries():
             skill_paths=[skills_path],
             llm_client=client,
             auto_select_skill=False,
+            auto_execute_scripts=True,
+            use_sandbox=True,
+            sandbox_base_url=sandbox_url,
             on_reference_loaded=on_ref_loaded,
         )
         await agent.initialize()
@@ -180,15 +198,16 @@ async def demo_different_queries():
 
 
 async def demo_azure_openai():
-    """演示 Azure OpenAI 支持"""
+    """演示 Azure OpenAI 支持（沙箱模式）"""
     from openskills import AzureOpenAIClient, SkillAgent
 
     print("\n" + "=" * 60)
-    print("Demo 4: Azure OpenAI 支持")
+    print("Demo 4: Azure OpenAI 支持 (沙箱模式)")
     print("=" * 60)
 
     endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
     api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not endpoint or not api_key:
         print("\n[跳过] 未设置 Azure 环境变量")
@@ -204,12 +223,16 @@ async def demo_azure_openai():
     print(f"  Endpoint: {client.endpoint}")
     print(f"  Deployment: {client.deployment}")
     print(f"  API Version: {client.api_version}")
+    print(f"[沙箱地址] {sandbox_url}")
 
-    # 使用 Azure 客户端创建 Agent
+    # 使用 Azure 客户端创建 Agent（沙箱模式）
     skills_path = Path(__file__).parent / "prompt-optimizer"
     agent = SkillAgent(
         skill_paths=[skills_path],
         llm_client=client,
+        auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
     )
     await agent.initialize()
 
@@ -220,15 +243,22 @@ async def demo_azure_openai():
 
 async def main():
     """主函数"""
-    print("=" * 60)
-    print("OpenSkills SDK Demo")
-    print("=" * 60)
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║       OpenSkills SDK Demo - Prompt Optimizer             ║
+║                                                          ║
+║  [前置条件] 启动沙箱服务:                                ║
+║  docker run --rm -p 8080:8080 \\                         ║
+║      ghcr.io/agent-infra/sandbox:latest                  ║
+╚══════════════════════════════════════════════════════════╝
+""")
 
     # 显示环境配置
-    print(f"\n[环境变量]")
+    print(f"[环境变量]")
     print(f"  OPENAI_API_KEY: {'已设置' if os.environ.get('OPENAI_API_KEY') else '未设置'}")
     print(f"  OPENAI_BASE_URL: {os.environ.get('OPENAI_BASE_URL', '(默认)')}")
     print(f"  OPENAI_MODEL: {os.environ.get('OPENAI_MODEL', '(默认 gpt-4)')}")
+    print(f"  SANDBOX_URL: {os.environ.get('SANDBOX_URL', '(默认 http://localhost:8080)')}")
     print(f"  AZURE_OPENAI_ENDPOINT: {'已设置' if os.environ.get('AZURE_OPENAI_ENDPOINT') else '未设置'}")
 
     # 检查 prompt-optimizer skill 是否存在

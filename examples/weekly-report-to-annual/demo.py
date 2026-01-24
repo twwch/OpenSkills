@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Weekly Report to Annual Report Demo
+Weekly Report to Annual Report Demo - 周报年度复盘示例
 
 演示如何使用 weekly-report-to-annual skill 从飞书邮箱读取周报并生成年度报告。
 
@@ -8,10 +8,18 @@ Weekly Report to Annual Report Demo
     OPENAI_API_KEY: OpenAI API Key
     OPENAI_BASE_URL: (可选) API Base URL
     OPENAI_MODEL: (可选) 模型名称，默认 gpt-4
+    SANDBOX_URL: (可选) 沙箱地址，默认 http://localhost:8080
 
     # 飞书邮箱配置
     FEISHU_EMAIL: 飞书邮箱地址
     FEISHU_PASSWORD: 飞书邮箱应用密码（非登录密码）
+
+使用方法:
+    # 启动沙箱服务
+    docker run --rm -p 8080:8080 ghcr.io/agent-infra/sandbox:latest
+
+    # 运行示例
+    python demo.py
 """
 
 import asyncio
@@ -77,18 +85,19 @@ def save_report_to_file(content: str, output_path: str = "", filename: str = "")
 
 
 async def demo_annual_report_generation():
-    """演示年度报告生成流程"""
+    """演示年度报告生成流程（沙箱模式）"""
     from openskills import SkillAgent
     from openskills.llm.openai_compat import OpenAICompatClient
 
     print("\n" + "=" * 60)
-    print("Demo: 周报汇总生成年度复盘报告")
+    print("Demo: 周报汇总生成年度复盘报告 (沙箱模式)")
     print("=" * 60)
 
     # 获取 API 配置
     api_key = os.environ.get("OPENAI_API_KEY")
     base_url = os.environ.get("OPENAI_BASE_URL")
     model = os.environ.get("OPENAI_MODEL", "gpt-4")
+    sandbox_url = os.environ.get("SANDBOX_URL", "http://localhost:8080")
 
     if not api_key:
         print("\n[跳过] 未设置 OPENAI_API_KEY")
@@ -97,6 +106,8 @@ async def demo_annual_report_generation():
     # 获取飞书邮箱配置
     feishu_email = os.environ.get("FEISHU_EMAIL")
     feishu_password = os.environ.get("FEISHU_PASSWORD")
+
+    print(f"\n[沙箱地址] {sandbox_url}")
 
     # 回调：显示加载了哪些 reference
     def on_reference_loaded(ref_path: str, content: str):
@@ -112,12 +123,15 @@ async def demo_annual_report_generation():
         model=model,
     )
 
-    # 创建 Agent
+    # 创建 Agent（沙箱模式）
     skills_path = Path(__file__).parent
     agent = SkillAgent(
         skill_paths=[skills_path],
         llm_client=client,
         auto_select_skill=True,
+        auto_execute_scripts=True,
+        use_sandbox=True,
+        sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_skill_selected=on_skill_selected,
     )
@@ -262,15 +276,22 @@ async def demo_annual_report_generation():
 
 async def main():
     """主函数"""
-    print("=" * 60)
-    print("Weekly Report to Annual Report Demo")
-    print("=" * 60)
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║    Weekly Report to Annual Report - 周报年度复盘示例     ║
+║                                                          ║
+║  [前置条件] 启动沙箱服务:                                ║
+║  docker run --rm -p 8080:8080 \\                         ║
+║      ghcr.io/agent-infra/sandbox:latest                  ║
+╚══════════════════════════════════════════════════════════╝
+""")
 
     # 显示环境配置
-    print(f"\n[环境变量]")
+    print(f"[环境变量]")
     print(f"  OPENAI_API_KEY: {'已设置' if os.environ.get('OPENAI_API_KEY') else '未设置'}")
     print(f"  OPENAI_BASE_URL: {os.environ.get('OPENAI_BASE_URL', '(默认)')}")
     print(f"  OPENAI_MODEL: {os.environ.get('OPENAI_MODEL', '(默认 gpt-4)')}")
+    print(f"  SANDBOX_URL: {os.environ.get('SANDBOX_URL', '(默认 http://localhost:8080)')}")
     print(f"  FEISHU_EMAIL: {'已设置' if os.environ.get('FEISHU_EMAIL') else '未设置'}")
     print(f"  FEISHU_PASSWORD: {'已设置' if os.environ.get('FEISHU_PASSWORD') else '未设置'}")
 
