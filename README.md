@@ -20,6 +20,8 @@ An open-source Agent Skill framework implementing the progressive disclosure arc
 - **Multiple LLM providers** - OpenAI, Azure OpenAI, Ollama, Together, Groq, DeepSeek
 - **Auto skill invocation** - Automatically match and invoke skills based on user queries
 - **Multimodal support** - Handle images via URL, base64, or file path
+- **Sandbox execution** - Secure script execution in isolated AIO Sandbox environment
+- **Automatic file sync** - Upload input files and download outputs automatically
 
 ## Installation
 
@@ -51,6 +53,32 @@ async def main():
 asyncio.run(main())
 ```
 
+### Using Sandbox Mode (Recommended for Script Execution)
+
+```python
+import asyncio
+from openskills import create_agent
+
+async def main():
+    # Create agent with sandbox enabled
+    agent = await create_agent(
+        skill_paths=["./skills"],
+        api_key="your-api-key",
+        model="gpt-4",
+        use_sandbox=True,  # Enable sandbox execution
+        sandbox_base_url="http://localhost:8080",
+        auto_execute_scripts=True,
+    )
+
+    # Local file paths are automatically uploaded to sandbox
+    response = await agent.chat("请处理这个文件: /path/to/file.pdf")
+    print(response.content)
+
+    # Output files are automatically downloaded to skill_dir/output/
+
+asyncio.run(main())
+```
+
 ### Using SkillManager (Low-level API)
 
 ```python
@@ -69,6 +97,108 @@ skills = manager.match("summarize meeting")
 if skills:
     instruction = await manager.load_instruction(skills[0].name)
     print(instruction.content)
+```
+
+## Sandbox Environment
+
+OpenSkills supports executing scripts in an isolated sandbox environment using [AIO Sandbox](https://github.com/agent-infra/aio-sandbox). This provides:
+
+- **Security**: Scripts run in isolated containers
+- **Dependency management**: Auto-install Python packages defined in SKILL.md
+- **File synchronization**: Automatic upload/download of files
+
+### Installing AIO Sandbox
+
+#### Option 1: Docker (Recommended)
+
+```bash
+# Pull and run the sandbox container
+docker run -d --name aio-sandbox \
+  -p 8080:8080 \
+  ghcr.io/agent-infra/aio-sandbox:latest
+
+# Verify it's running
+curl http://localhost:8080/health
+```
+
+#### Option 2: Docker Compose
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+services:
+  sandbox:
+    image: ghcr.io/agent-infra/aio-sandbox:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - sandbox-data:/home/gem
+    restart: unless-stopped
+
+volumes:
+  sandbox-data:
+```
+
+```bash
+docker-compose up -d
+```
+
+### Sandbox Features
+
+#### Automatic Dependency Installation
+
+Define dependencies in SKILL.md frontmatter:
+
+```yaml
+dependency:
+  python:
+    - PyMuPDF==1.23.8
+    - pandas>=2.0.0
+  system:
+    - mkdir -p output/images
+```
+
+Dependencies are installed automatically when the skill is initialized.
+
+#### Automatic File Synchronization
+
+1. **Upload**: Local file paths in script input are auto-uploaded to `/home/gem/uploads/`
+2. **Download**: Specify output directories in script config to auto-download results
+
+```yaml
+scripts:
+  - name: process_file
+    path: scripts/process.py
+    description: Process uploaded files
+    timeout: 120
+    outputs:
+      - /home/gem/output  # Auto-sync to local skill_dir/output/
+```
+
+#### Sandbox Client API
+
+For advanced use cases, use the SandboxClient directly:
+
+```python
+from openskills.sandbox import SandboxClient
+
+async with SandboxClient("http://localhost:8080") as client:
+    # Execute commands
+    result = await client.exec_command("python --version")
+    print(result.output)
+
+    # File operations
+    await client.write_file("/home/gem/test.txt", "Hello World")
+    content = await client.read_file("/home/gem/test.txt")
+
+    # Upload/download files
+    await client.upload_file(local_bytes, "/home/gem/uploads/file.pdf")
+    data = await client.download_file("/home/gem/output/result.txt")
+
+    # List files
+    files = await client.list_files("/home/gem/output")
+    for f in files:
+        print(f"{f.name} (dir={f.is_dir})")
 ```
 
 ## Skill Structure
@@ -229,12 +359,35 @@ See the [examples](./examples) directory for complete examples:
 - `prompt-optimizer/` - Prompt engineering skill with 57 frameworks (auto-discovered)
 - `meeting-summary/` - Meeting summarization skill with finance reference
 - `office-skills/` - Word and Excel processing skills
+- `file-to-article-generator/` - PDF/Word parsing with sandbox execution
+- `weekly-report-to-annual/` - Weekly report aggregation skill
 
-Run the demo:
+### Running Examples
+
+#### Basic Demo (Local Execution)
 ```bash
 cd examples
+export OPENAI_API_KEY=your-api-key
 python demo.py
 ```
+
+#### Sandbox Demo (Recommended)
+```bash
+# 1. Start sandbox first
+docker run -d -p 8080:8080 ghcr.io/agent-infra/aio-sandbox:latest
+
+# 2. Run demo with sandbox
+cd examples/file-to-article-generator
+export OPENAI_API_KEY=your-api-key
+python demo.py /path/to/your/file.pdf
+```
+
+The sandbox demo will:
+1. Initialize sandbox environment and install dependencies
+2. Upload your file to sandbox automatically
+3. Execute parsing script in isolated environment
+4. Download generated images to local `output/` directory
+5. Generate article with proper image references
 
 ## CLI Commands
 
