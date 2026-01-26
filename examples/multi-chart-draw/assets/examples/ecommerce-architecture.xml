@@ -1,0 +1,270 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Skill" version="22.0.0">
+  <diagram name="E-Commerce Architecture" id="diagram-1">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 标题 -->
+        <mxCell id="title" value="电商系统架构图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="300" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 客户端层 ==================== -->
+        <mxCell id="client-layer" value="客户端" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="250" y="80" width="600" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="web-client" value="Web 浏览器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="ios-client" value="iOS App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="400" y="120" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="android-client" value="Android App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="520" y="120" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="miniapp-client" value="小程序" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="640" y="120" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h5-client" value="H5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="760" y="120" width="60" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== CDN/负载均衡层 ==================== -->
+        <mxCell id="cdn" value="CDN (静态资源加速)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="200" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lb" value="负载均衡 (Nginx/SLB)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="200" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== API 网关层 ==================== -->
+        <mxCell id="gateway-layer" value="API 网关层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="300" y="280" width="500" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gateway1" value="API Gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="330" y="320" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway-auth" value="认证鉴权" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="450" y="320" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway-limit" value="限流熔断" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="550" y="320" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway-log" value="日志追踪" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="650" y="320" width="80" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 微服务层 ==================== -->
+        <mxCell id="service-layer" value="微服务层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="420" width="900" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- 第一行服务 -->
+        <mxCell id="user-service" value="用户服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="130" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="product-service" value="商品服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="240" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="order-service" value="订单服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="350" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cart-service" value="购物车服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="460" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="pay-service" value="支付服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="570" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inventory-service" value="库存服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="search-service" value="搜索服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="790" y="460" width="90" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二行服务 -->
+        <mxCell id="promotion-service" value="营销服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="130" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="coupon-service" value="优惠券服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="240" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="logistics-service" value="物流服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="350" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="msg-service" value="消息服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="460" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="comment-service" value="评价服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="570" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="recommend-service" value="推荐服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="680" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="report-service" value="报表服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="790" y="515" width="90" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 消息队列 ==================== -->
+        <mxCell id="mq-layer" value="消息队列" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="300" y="610" width="500" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="kafka" value="Kafka" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="330" y="650" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="rabbitmq" value="RabbitMQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="430" y="650" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="rocketmq" value="RocketMQ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="530" y="650" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="mq-desc" value="异步消息/削峰填谷/解耦" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#666666;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="630" y="650" width="150" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 缓存层 ==================== -->
+        <mxCell id="cache-layer" value="缓存层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="720" width="350" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="redis-cluster" value="Redis Cluster" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="130" y="760" width="90" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-sentinel" value="Redis Sentinel" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="240" y="760" width="90" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="local-cache" value="本地缓存" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="350" y="760" width="80" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 数据库层 ==================== -->
+        <mxCell id="db-layer" value="数据存储层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="480" y="720" width="520" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mysql-master" value="MySQL 主库" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="510" y="760" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mysql-slave" value="MySQL 从库" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="610" y="760" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="mongodb" value="MongoDB" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="710" y="760" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="es" value="Elasticsearch" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="810" y="760" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="oss" value="OSS" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=10;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="910" y="760" width="60" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 基础设施层 ==================== -->
+        <mxCell id="infra-layer" value="基础设施 / 运维监控" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="100" y="860" width="900" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="k8s" value="Kubernetes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="130" y="895" width="90" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="docker" value="Docker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="240" y="895" width="70" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="prometheus" value="Prometheus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="330" y="895" width="90" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="grafana" value="Grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="440" y="895" width="70" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="elk" value="ELK Stack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="530" y="895" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="skywalking" value="SkyWalking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="630" y="895" width="80" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="jenkins" value="Jenkins" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="730" y="895" width="70" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="gitlab" value="GitLab" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="820" y="895" width="60" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="nacos" value="Nacos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="900" y="895" width="70" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 连接线 ==================== -->
+        <!-- 客户端到 CDN/LB -->
+        <mxCell id="conn1" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="client-layer" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="conn2" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="client-layer" target="lb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- LB 到网关 -->
+        <mxCell id="conn3" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="lb" target="gateway-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 网关到微服务 -->
+        <mxCell id="conn4" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="gateway-layer" target="service-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 微服务到消息队列 -->
+        <mxCell id="conn5" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;" edge="1" parent="1" source="service-layer" target="mq-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 微服务到缓存 -->
+        <mxCell id="conn6" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="service-layer" target="cache-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 微服务到数据库 -->
+        <mxCell id="conn7" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#666666;dashed=1;" edge="1" parent="1" source="service-layer" target="db-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 缓存到基础设施 -->
+        <mxCell id="conn8" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;strokeWidth=1;strokeColor=#999999;dashed=1;" edge="1" parent="1" source="cache-layer" target="infra-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- 数据库到基础设施 -->
+        <mxCell id="conn9" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.8;entryY=0;entryDx=0;entryDy=0;strokeWidth=1;strokeColor=#999999;dashed=1;" edge="1" parent="1" source="db-layer" target="infra-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== 外部服务 ==================== -->
+        <mxCell id="external" value="第三方服务" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=25;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="420" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="alipay" value="支付宝" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="external">
+          <mxGeometry y="25" width="120" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="wechatpay" value="微信支付" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="external">
+          <mxGeometry y="50" width="120" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="sms" value="短信服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="external">
+          <mxGeometry y="75" width="120" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="logistics-api" value="物流API" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="external">
+          <mxGeometry y="100" width="120" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="map-api" value="地图服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="external">
+          <mxGeometry y="125" width="120" height="25" as="geometry" />
+        </mxCell>
+
+        <!-- 微服务到外部服务 -->
+        <mxCell id="conn-external" value="" style="endArrow=classic;startArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;strokeColor=#999999;dashed=1;" edge="1" parent="1" source="service-layer" target="external">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

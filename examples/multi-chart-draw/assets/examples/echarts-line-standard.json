@@ -1,0 +1,32 @@
+{
+  "title": {
+    "text": "用户增长趋势"
+  },
+  "tooltip": {
+    "trigger": "axis"
+  },
+  "legend": {
+    "data": ["用户数", "活跃用户"]
+  },
+  "xAxis": {
+    "type": "category",
+    "data": ["1月", "2月", "3月", "4月", "5月", "6月"]
+  },
+  "yAxis": {
+    "type": "value"
+  },
+  "series": [
+    {
+      "name": "用户数",
+      "type": "line",
+      "data": [120, 132, 101, 134, 90, 230],
+      "smooth": true
+    },
+    {
+      "name": "活跃用户",
+      "type": "line",
+      "data": [220, 182, 191, 234, 290, 330],
+      "smooth": true
+    }
+  ]
+}

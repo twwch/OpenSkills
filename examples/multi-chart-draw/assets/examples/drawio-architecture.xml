@@ -1,0 +1,86 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Skill" version="22.0.0">
+  <diagram name="System Architecture" id="diagram-1">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- 用户层 -->
+        <mxCell id="users" value="用户" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="360" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- 负载均衡 -->
+        <mxCell id="lb" value="负载均衡" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="360" y="140" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- 网关层 -->
+        <mxCell id="gateway-layer" value="API网关层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="280" y="240" width="280" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway1" value="网关实例1" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="gateway-layer">
+          <mxGeometry y="26" width="280" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="gateway2" value="网关实例2" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="gateway-layer">
+          <mxGeometry y="52" width="280" height="26" as="geometry" />
+        </mxCell>
+        
+        <!-- 应用层 -->
+        <mxCell id="app-layer" value="应用服务层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="120" y="420" width="240" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="service1" value="用户服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer">
+          <mxGeometry y="26" width="240" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="service2" value="订单服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer">
+          <mxGeometry y="52" width="240" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="service3" value="商品服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer">
+          <mxGeometry y="78" width="240" height="26" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="app-layer2" value="应用服务层" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="480" y="420" width="240" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="service4" value="用户服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer2">
+          <mxGeometry y="26" width="240" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="service5" value="订单服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer2">
+          <mxGeometry y="52" width="240" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="service6" value="商品服务" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;whiteSpace=wrap;html=1;" vertex="1" parent="app-layer2">
+          <mxGeometry y="78" width="240" height="26" as="geometry" />
+        </mxCell>
+        
+        <!-- 数据层 -->
+        <mxCell id="redis" value="Redis缓存" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="120" y="640" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db1" value="主数据库" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="260" y="640" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db2" value="从数据库" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="400" y="640" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="db3" value="从数据库" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="540" y="640" width="100" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- 连接线 -->
+        <mxCell id="c1" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="users" target="lb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="lb" target="gateway-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="endArrow=classic;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway-layer" target="app-layer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="" style="endArrow=classic;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="gateway-layer" target="app-layer2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

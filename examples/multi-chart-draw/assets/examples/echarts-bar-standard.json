@@ -1,0 +1,40 @@
+{
+  "title": {
+    "text": "2024年季度销售额",
+    "subtext": "单位：万元"
+  },
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    }
+  },
+  "legend": {
+    "data": ["销售额"]
+  },
+  "grid": {
+    "left": "3%",
+    "right": "4%",
+    "bottom": "3%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": ["Q1", "Q2", "Q3", "Q4"],
+    "name": "季度"
+  },
+  "yAxis": {
+    "type": "value",
+    "name": "销售额(万元)"
+  },
+  "series": [
+    {
+      "name": "销售额",
+      "type": "bar",
+      "data": [1200, 1500, 1800, 2100],
+      "itemStyle": {
+        "color": "#5470c6"
+      }
+    }
+  ]
+}

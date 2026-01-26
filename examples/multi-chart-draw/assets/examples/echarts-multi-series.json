@@ -1,0 +1,56 @@
+{
+  "title": {
+    "text": "2024年季度销售额对比",
+    "subtext": "单位：万元"
+  },
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    }
+  },
+  "legend": {
+    "data": ["产品A", "产品B", "产品C"]
+  },
+  "grid": {
+    "left": "3%",
+    "right": "4%",
+    "bottom": "3%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": ["Q1", "Q2", "Q3", "Q4"],
+    "name": "季度"
+  },
+  "yAxis": {
+    "type": "value",
+    "name": "销售额(万元)"
+  },
+  "series": [
+    {
+      "name": "产品A",
+      "type": "bar",
+      "data": [1200, 1500, 1800, 2100],
+      "itemStyle": {
+        "color": "#5470c6"
+      }
+    },
+    {
+      "name": "产品B",
+      "type": "bar",
+      "data": [900, 1100, 1300, 1600],
+      "itemStyle": {
+        "color": "#91cc75"
+      }
+    },
+    {
+      "name": "产品C",
+      "type": "bar",
+      "data": [600, 800, 1000, 1200],
+      "itemStyle": {
+        "color": "#fac858"
+      }
+    }
+  ]
+}

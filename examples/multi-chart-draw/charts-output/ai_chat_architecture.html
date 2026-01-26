@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrawIO 图表</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            padding: 10px 20px;
+            background-color: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+        .header .info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .btn-secondary {
+            background-color: #2196F3;
+        }
+        .btn-secondary:hover {
+            background-color: #0b7dda;
+        }
+        .btn-warning {
+            background-color: #ff9800;
+        }
+        .btn-warning:hover {
+            background-color: #f57c00;
+        }
+        #drawio-container {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: white;
+        }
+        #drawio-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+            z-index: 100;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fallback {
+            display: none;
+            padding: 40px;
+            text-align: center;
+        }
+        .fallback.show {
+            display: block;
+        }
+        .fallback-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>DrawIO 图表</h1>
+            <div class="info">完整编辑功能：拖动、缩放、编辑文本、修改样式</div>
+        </div>
+        <div class="toolbar">
+            <a href="https://app.diagrams.net/" target="_blank" class="btn btn-secondary">打开在线编辑器</a>
+            <button class="btn btn-warning" onclick="openFullscreen()">全屏查看</button>
+        </div>
+    </div>
+    
+    <div id="drawio-container">
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div>加载中...</div>
+        </div>
+        <div class="fallback" id="fallback">
+            <h3>DrawIO 加载失败</h3>
+            <p>可能的原因：网络连接问题或 iframe 被阻止</p>
+            <button class="fallback-btn" onclick="openInNewTab()">在新标签页中打开</button>
+        </div>
+        <iframe
+            id="drawio-iframe"
+            src="https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&p=*"
+            title="Draw.io Editor"
+            allowfullscreen="true"
+        ></iframe>
+    </div>
+    
+    <script>
+        var iframe = document.getElementById('drawio-iframe');
+        var loading = document.getElementById('loading');
+        var fallback = document.getElementById('fallback');
+        var xmlData = "<mxfile host=\"app.diagrams.net\">\n  <diagram name=\"AI-Chat\" id=\"aichat\">\n    <mxGraphModel dx=\"1200\" dy=\"800\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1200\" pageHeight=\"700\">\n      <root>\n        <mxCell id=\"0\"/>\n        <mxCell id=\"1\" parent=\"0\"/>\n\n        <mxCell id=\"title\" value=\"AI \u5bf9\u8bdd\u4ea7\u54c1\u67b6\u6784\u56fe\" style=\"text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"400\" y=\"10\" width=\"250\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"u1\" value=\"Web Chat\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"80\" y=\"60\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"u2\" value=\"Mobile APP\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"190\" y=\"60\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"u3\" value=\"API/SDK\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"300\" y=\"60\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"u4\" value=\"\u4f01\u4e1a\u5fae\u4fe1/\u9489\u9489\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"410\" y=\"60\" width=\"100\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"u5\" value=\"Slack/Discord\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"530\" y=\"60\" width=\"100\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"gw\" value=\"API Gateway / \u8d1f\u8f7d\u5747\u8861 / \u8ba4\u8bc1\u9274\u6743 / \u9650\u6d41\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"140\" y=\"125\" width=\"350\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"chat1\" value=\"\u5bf9\u8bdd\u7ba1\u7406\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"190\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"chat2\" value=\"\u4f1a\u8bdd\u4e0a\u4e0b\u6587\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"155\" y=\"190\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"chat3\" value=\"\u6d41\u5f0f\u8f93\u51fa\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"250\" y=\"190\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"chat4\" value=\"\u591a\u8f6e\u5bf9\u8bdd\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"345\" y=\"190\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"chat5\" value=\"\u6d88\u606f\u961f\u5217\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"440\" y=\"190\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"ai1\" value=\"LLM \u63a8\u7406\u5f15\u64ce\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"260\" width=\"100\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai2\" value=\"Prompt \u7ba1\u7406\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"175\" y=\"260\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai3\" value=\"RAG \u68c0\u7d22\u589e\u5f3a\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"280\" y=\"260\" width=\"100\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai4\" value=\"Agent \u7f16\u6392\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"395\" y=\"260\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai5\" value=\"Function Call\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"500\" y=\"260\" width=\"90\" height=\"40\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"ai6\" value=\"\u610f\u56fe\u8bc6\u522b\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"310\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai7\" value=\"\u5b9e\u4f53\u62bd\u53d6\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"155\" y=\"310\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai8\" value=\"\u60c5\u611f\u5206\u6790\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"250\" y=\"310\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai9\" value=\"\u5185\u5bb9\u5b89\u5168\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"345\" y=\"310\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ai10\" value=\"\u591a\u6a21\u6001\u5904\u7406\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"440\" y=\"310\" width=\"85\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"kb1\" value=\"\u77e5\u8bc6\u5e93\u7ba1\u7406\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"375\" width=\"90\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"kb2\" value=\"\u6587\u6863\u89e3\u6790\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"165\" y=\"375\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"kb3\" value=\"\u5411\u91cf\u5316\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"260\" y=\"375\" width=\"70\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"kb4\" value=\"\u8bed\u4e49\u68c0\u7d22\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"345\" y=\"375\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"kb5\" value=\"\u6587\u6863\u5207\u7247\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"440\" y=\"375\" width=\"80\" height=\"35\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"db1\" value=\"\u5411\u91cf\u6570\u636e\u5e93\" style=\"shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"440\" width=\"80\" height=\"50\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"db2\" value=\"\u5bf9\u8bdd\u5386\u53f2\" style=\"shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"160\" y=\"440\" width=\"80\" height=\"50\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"db3\" value=\"\u7528\u6237\u6570\u636e\" style=\"shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"260\" y=\"440\" width=\"80\" height=\"50\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"db4\" value=\"Redis\u7f13\u5b58\" style=\"shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"360\" y=\"440\" width=\"80\" height=\"50\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"db5\" value=\"\u6a21\u578b\u5b58\u50a8\" style=\"shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=8;fillColor=#f8cecc;strokeColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"460\" y=\"440\" width=\"80\" height=\"50\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"inf1\" value=\"GPU\u96c6\u7fa4\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"60\" y=\"515\" width=\"80\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"inf2\" value=\"K8s\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"155\" y=\"515\" width=\"70\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"inf3\" value=\"\u76d1\u63a7\u544a\u8b66\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"240\" y=\"515\" width=\"80\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"inf4\" value=\"\u65e5\u5fd7\u5206\u6790\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"335\" y=\"515\" width=\"80\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"inf5\" value=\"CI/CD\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"430\" y=\"515\" width=\"70\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"ext_bg\" value=\"\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;opacity=50;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"620\" y=\"180\" width=\"160\" height=\"260\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext_title\" value=\"\u5916\u90e8 LLM\" style=\"text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontStyle=1;fontSize=12;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"660\" y=\"185\" width=\"80\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext1\" value=\"OpenAI GPT\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"215\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext2\" value=\"Claude\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"255\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext3\" value=\"\u6587\u5fc3\u4e00\u8a00\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"295\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext4\" value=\"\u901a\u4e49\u5343\u95ee\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"335\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext5\" value=\"DeepSeek\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"375\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"ext6\" value=\"\u672c\u5730\u90e8\u7f72\u6a21\u578b\" style=\"rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"640\" y=\"415\" width=\"120\" height=\"30\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"l1\" value=\"\u7528\u6237\u5c42\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#9673a6;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"5\" y=\"70\" width=\"50\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l2\" value=\"\u63a5\u5165\u5c42\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#d6b656;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"5\" y=\"132\" width=\"50\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l3\" value=\"\u5bf9\u8bdd\u670d\u52a1\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"0\" y=\"195\" width=\"55\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l4\" value=\"AI\u6838\u5fc3\u5c42\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#82b366;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"0\" y=\"285\" width=\"55\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l5\" value=\"\u77e5\u8bc6\u5c42\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#d79b00;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"5\" y=\"382\" width=\"50\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l6\" value=\"\u6570\u636e\u5c42\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#b85450;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"5\" y=\"455\" width=\"50\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n        <mxCell id=\"l7\" value=\"\u57fa\u7840\u8bbe\u65bd\" style=\"text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontStyle=1;fontSize=10;fontColor=#6c8ebf;\" vertex=\"1\" parent=\"1\">\n          <mxGeometry x=\"0\" y=\"520\" width=\"55\" height=\"20\" as=\"geometry\"/>\n        </mxCell>\n\n        <mxCell id=\"c1\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"315\" y=\"100\" as=\"sourcePoint\"/>\n            <mxPoint x=\"315\" y=\"125\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c2\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"315\" y=\"160\" as=\"sourcePoint\"/>\n            <mxPoint x=\"315\" y=\"190\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c3\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"280\" y=\"225\" as=\"sourcePoint\"/>\n            <mxPoint x=\"280\" y=\"260\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c4\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"280\" y=\"345\" as=\"sourcePoint\"/>\n            <mxPoint x=\"280\" y=\"375\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c5\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"280\" y=\"410\" as=\"sourcePoint\"/>\n            <mxPoint x=\"280\" y=\"440\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c6\" style=\"endArrow=classic;html=1;strokeColor=#999999;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"280\" y=\"490\" as=\"sourcePoint\"/>\n            <mxPoint x=\"280\" y=\"515\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n        <mxCell id=\"c7\" style=\"endArrow=classic;startArrow=classic;html=1;strokeColor=#999999;dashed=1;\" edge=\"1\" parent=\"1\">\n          <mxGeometry relative=\"1\" as=\"geometry\">\n            <mxPoint x=\"590\" y=\"280\" as=\"sourcePoint\"/>\n            <mxPoint x=\"620\" y=\"280\" as=\"targetPoint\"/>\n          </mxGeometry>\n        </mxCell>\n\n      </root>\n    </mxGraphModel>\n  </diagram>\n</mxfile>\n";
+        var isLoaded = false;
+        var loadTimeout = null;
+        var isIframeReady = false;
+        
+        // 发送 XML 数据到 iframe
+        function sendXmlToIframe() {
+            if (iframe.contentWindow && isIframeReady) {
+                var message = {
+                    action: 'load',
+                    xml: xmlData,
+                    title: 'DrawIO 图表'
+                };
+                console.log('发送 XML 数据到 DrawIO iframe...');
+                // proto=json 时需要发送 JSON 字符串
+                iframe.contentWindow.postMessage(JSON.stringify(message), '*');
+            } else {
+                console.warn('iframe 未准备好，等待加载完成...');
+            }
+        }
+        
+        // iframe 加载完成
+        iframe.addEventListener('load', function() {
+            console.log('DrawIO iframe 已加载，等待 init 事件...');
+            isIframeReady = true;
+            // 等待 DrawIO 初始化完成
+            setTimeout(sendXmlToIframe, 1000);
+        });
+        
+        // 监听来自 iframe 的消息
+        window.addEventListener('message', function(event) {
+            // 检查是否是来自我们的 iframe
+            if (event.source !== iframe.contentWindow) {
+                return;
+            }
+
+            // proto=json 时消息是 JSON 字符串，需要解析
+            var msg;
+            try {
+                msg = (typeof event.data === 'string') ? JSON.parse(event.data) : event.data;
+            } catch (e) {
+                console.warn('无法解析消息:', event.data);
+                return;
+            }
+
+            console.log('收到 DrawIO 消息:', msg);
+
+            // 处理初始化消息 (DrawIO 已准备好)
+            if (msg.event === 'init') {
+                console.log('DrawIO 已初始化，发送 XML 数据...');
+                isLoaded = true;
+                sendXmlToIframe();
+            }
+
+            // 处理加载完成消息
+            if (msg.event === 'ready' || msg.event === 'load') {
+                console.log('DrawIO 准备就绪');
+                loading.style.display = 'none';
+                if (loadTimeout) {
+                    clearTimeout(loadTimeout);
+                    loadTimeout = null;
+                }
+            }
+
+            // 处理错误消息
+            if (msg.event === 'error') {
+                console.error('DrawIO 错误:', msg);
+                loading.style.display = 'none';
+                fallback.classList.add('show');
+            }
+
+            // 处理保存消息
+            if (msg.event === 'save') {
+                console.log('用户点击保存:', msg.xml);
+            }
+        });
+        
+        // 全屏查看
+        function openFullscreen() {
+            if (iframe.requestFullscreen) {
+                iframe.requestFullscreen();
+            } else if (iframe.webkitRequestFullscreen) {
+                iframe.webkitRequestFullscreen();
+            } else if (iframe.msRequestFullscreen) {
+                iframe.msRequestFullscreen();
+            }
+        }
+        
+        // 在新标签页打开
+        function openInNewTab() {
+            window.open('https://app.diagrams.net/', '_blank');
+        }
+        
+        // 超时检测（15秒）
+        loadTimeout = setTimeout(function() {
+            if (!isLoaded) {
+                console.warn('DrawIO 加载超时');
+                loading.style.display = 'none';
+            }
+        }, 15000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# 几何图形示例
+# 点
+A = (0, 0)
+B = (4, 0)
+C = (2, 3)
+
+# 多边形
+Polygon(A, B, C)
+
+# 圆
+Circle(A, 2)
+Circle(B, 1.5)
+Circle(C, 1)
+
+# 线段
+Segment(A, B)
+Segment(B, C)
+Segment(C, A)

@@ -1,0 +1,15 @@
+{
+  "type": "bar",
+  "title": {
+    "text": "2024年季度销售额"
+  },
+  "data": {
+    "xAxis": ["Q1", "Q2", "Q3", "Q4"],
+    "seriesName": "销售额(万元)",
+    "series": [1200, 1500, 1800, 2100]
+  },
+  "xAxisName": "季度",
+  "yAxisName": "销售额(万元)",
+  "width": "900px",
+  "height": "500px"
+}
