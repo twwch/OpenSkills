@@ -12,6 +12,8 @@ from email.header import decode_header
 import json
 import sys
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 
 def decode_email_header(header):
@@ -83,6 +85,30 @@ def list_folders(mail):
     return folder_list
 
 
+def search_in_folder_with_connection(folder_name, email_addr, password, imap_server, imap_port,
+                                    search_keyword, max_emails, year_filter=None):
+    """Search for emails in a specific folder with its own IMAP connection."""
+    weekly_reports = []
+
+    try:
+        # Each thread creates its own connection
+        print(f"[DEBUG] [线程] 为文件夹 {folder_name} 创建连接...", file=sys.stderr)
+        mail = imaplib.IMAP4_SSL(imap_server, imap_port)
+        mail.login(email_addr, password)
+
+        # Search in the folder
+        reports, error = search_in_folder(mail, folder_name, search_keyword, max_emails, year_filter)
+
+        # Close connection
+        mail.logout()
+        print(f"[DEBUG] [线程] 文件夹 {folder_name} 搜索完成，找到 {len(reports)} 封邮件", file=sys.stderr)
+
+        return folder_name, reports, error
+    except Exception as e:
+        print(f"[DEBUG] [线程] 文件夹 {folder_name} 搜索失败: {str(e)}", file=sys.stderr)
+        return folder_name, [], str(e)
+
+
 def search_in_folder(mail, folder_name, search_keyword, max_emails, year_filter=None):
     """Search for emails in a specific folder."""
     weekly_reports = []
@@ -97,7 +123,9 @@ def search_in_folder(mail, folder_name, search_keyword, max_emails, year_filter=
 
     # Search for all emails first, then filter by keyword
     try:
+        print(f"[DEBUG]   正在搜索文件夹中的邮件...", file=sys.stderr)
         status, messages = mail.search(None, "ALL")
+        print(f"[DEBUG]   搜索完成", file=sys.stderr)
     except Exception as e:
         return weekly_reports, str(e)
 
@@ -105,12 +133,15 @@ def search_in_folder(mail, folder_name, search_keyword, max_emails, year_filter=
         return weekly_reports, "Search failed"
 
     email_ids = messages[0].split()
+    print(f"[DEBUG]   找到 {len(email_ids)} 封邮件，准备获取最近 {max_emails} 封", file=sys.stderr)
 
     # Get most recent emails (reversed order)
     email_ids = email_ids[-max_emails:] if len(email_ids) > max_emails else email_ids
     email_ids = list(reversed(email_ids))  # Most recent first
 
-    for email_id in email_ids:
+    for idx, email_id in enumerate(email_ids, 1):
+        if idx % 10 == 0:  # 每处理10封邮件打印一次进度
+            print(f"[DEBUG]   已处理 {idx}/{len(email_ids)} 封邮件", file=sys.stderr)
         try:
             status, msg_data = mail.fetch(email_id, "(RFC822)")
 
@@ -197,11 +228,16 @@ def main():
 
     try:
         # Connect to IMAP server
+        print(f"[DEBUG] 正在连接 IMAP 服务器: {imap_server}:{imap_port}", file=sys.stderr)
         mail = imaplib.IMAP4_SSL(imap_server, imap_port)
+        print(f"[DEBUG] 连接成功，正在登录...", file=sys.stderr)
         mail.login(email_addr, password)
+        print(f"[DEBUG] 登录成功", file=sys.stderr)
 
         # List all available folders
+        print(f"[DEBUG] 正在列出所有文件夹...", file=sys.stderr)
         available_folders = list_folders(mail)
+        print(f"[DEBUG] 找到 {len(available_folders)} 个文件夹: {available_folders}", file=sys.stderr)
 
         weekly_reports = []
         searched_folders = []
@@ -210,25 +246,51 @@ def main():
         # 如果没有指定文件夹，搜索所有文件夹
         folders_to_search = folders if folders else available_folders
 
-        # Search in folders
+        # Match folders (case-insensitive)
+        matched_folders = []
         for folder in folders_to_search:
-            # Check if folder exists (case-insensitive match)
-            matched_folder = None
             for af in available_folders:
                 if folder.lower() == af.lower() or folder in af or af in folder:
-                    matched_folder = af
+                    if af not in matched_folders:
+                        matched_folders.append(af)
                     break
 
-            if matched_folder and matched_folder not in searched_folders:
-                reports, error = search_in_folder(mail, matched_folder, search_keyword, max_emails, year_filter)
-                searched_folders.append(matched_folder)
+        # Close the initial connection, each thread will create its own
+        mail.logout()
+        print(f"[DEBUG] 初始连接已关闭", file=sys.stderr)
+
+        # Search folders concurrently
+        print(f"[DEBUG] 使用并发方式搜索 {len(matched_folders)} 个文件夹 (最多5个并发)", file=sys.stderr)
+
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            # Submit all tasks
+            future_to_folder = {
+                executor.submit(
+                    search_in_folder_with_connection,
+                    folder,
+                    email_addr,
+                    password,
+                    imap_server,
+                    imap_port,
+                    search_keyword,
+                    max_emails,
+                    year_filter
+                ): folder
+                for folder in matched_folders
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_folder):
+                folder_name, reports, error = future.result()
+                searched_folders.append(folder_name)
                 if error:
-                    errors.append(f"{matched_folder}: {error}")
+                    errors.append(f"{folder_name}: {error}")
                 weekly_reports.extend(reports)
 
-        mail.logout()
+        print(f"[DEBUG] 所有文件夹搜索完成", file=sys.stderr)
 
         # Sort by date (most recent first)
+        print(f"[DEBUG] 正在排序和去重 {len(weekly_reports)} 封邮件...", file=sys.stderr)
         weekly_reports.sort(key=lambda x: x.get("date", ""), reverse=True)
 
         # Remove duplicates based on subject and date
@@ -239,6 +301,7 @@ def main():
             if key not in seen:
                 seen.add(key)
                 unique_reports.append(report)
+        print(f"[DEBUG] 去重后剩余 {len(unique_reports)} 封邮件", file=sys.stderr)
 
         result = {
             "status": "success",

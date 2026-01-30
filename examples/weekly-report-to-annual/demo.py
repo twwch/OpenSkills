@@ -42,18 +42,23 @@ def fetch_emails_from_feishu(email: str, password: str, imap_server: str = "imap
         "email": email,
         "password": password,
         "imap_server": imap_server,
-        "search_keyword": "周报",
+        "search_keyword": "",
         "max_emails": 100,
         "year": 2025,  # 只获取2025年的周报
-        # folders 不指定，搜索所有文件夹（包括发送和收到的）
+        # folders 不指定，使用并发方式搜索所有文件夹（快速且不会超时）
     })
 
+    print(f"\n[调用脚本] {script_path}")
     result = subprocess.run(
         [sys.executable, str(script_path)],
         input=input_data,
         capture_output=True,
         text=True,
     )
+
+    # 打印调试日志（stderr）
+    if result.stderr:
+        print(result.stderr)
 
     try:
         return json.loads(result.stdout)
@@ -130,7 +135,7 @@ async def demo_annual_report_generation():
         llm_client=client,
         auto_select_skill=True,
         auto_execute_scripts=True,
-        use_sandbox=True,
+        use_sandbox=False,
         sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_skill_selected=on_skill_selected,
