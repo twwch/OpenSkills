@@ -135,7 +135,7 @@ async def demo_annual_report_generation():
         llm_client=client,
         auto_select_skill=True,
         auto_execute_scripts=True,
-        use_sandbox=False,
+        use_sandbox=True,
         sandbox_base_url=sandbox_url,
         on_reference_loaded=on_reference_loaded,
         on_skill_selected=on_skill_selected,
